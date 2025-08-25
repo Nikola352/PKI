@@ -7,6 +7,7 @@ import com.team20.pki.authentication.service.AuthService;
 import com.team20.pki.authentication.service.JwtService;
 import com.team20.pki.authentication.service.RefreshTokenService;
 import com.team20.pki.common.dto.ErrorResponseDto;
+import com.team20.pki.common.model.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -56,6 +57,34 @@ public class AuthController {
             String jwt = jwtService.generateAccessToken(new UserDetailsImpl(result.getRefreshToken().getUser()));
             response.addCookie(refreshTokenCookie);
             return ResponseEntity.ok(new TokenRefreshResponseDto(jwt));
+        } else {
+            Cookie refreshTokenCookie = refreshTokenService.getCleanRefreshTokenCookie();
+            response.addCookie(refreshTokenCookie);
+            throw new UnauthenticatedError("Logged out");
+        }
+    }
+
+    /** Refresh access token but return user data as well. Useful for initial page load. */
+    @GetMapping("/refresh/user")
+    public ResponseEntity<LoginResponseDto> getCurrentUser(
+            @CookieValue(value = RefreshTokenService.COOKIE_NAME, required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        RefreshTokenVerificationResult result = refreshTokenService.verifyRefreshToken(refreshToken);
+        if(result.isValid()) {
+            Cookie refreshTokenCookie = refreshTokenService.getRotatedRefreshTokenCookie(result.getRefreshToken());
+            response.addCookie(refreshTokenCookie);
+
+            User user = result.getRefreshToken().getUser();
+            String jwt = jwtService.generateAccessToken(new UserDetailsImpl(user));
+
+            return ResponseEntity.ok(new LoginResponseDto(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getRole(),
+                    jwt
+            ));
         } else {
             Cookie refreshTokenCookie = refreshTokenService.getCleanRefreshTokenCookie();
             response.addCookie(refreshTokenCookie);
