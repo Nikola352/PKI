@@ -11,6 +11,8 @@ import com.team20.pki.util.SecureRandomGenerator;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,8 +139,14 @@ public class RefreshTokenService {
         return cookie;
     }
 
+    @EventListener(ContextRefreshedEvent.class)
+    @Transactional
+    public void initAfterStartup() {
+        clearExpiredTokens();
+    }
+
     @Scheduled(cron = "${config.refresh-token.delete-cron}")
-    public void cleanExpiredTokens() {
+    public void clearExpiredTokens() {
         refreshTokenRepository.deleteAllExpiredAndRevokedSessions();
     }
 }
