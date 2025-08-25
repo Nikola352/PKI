@@ -1,8 +1,8 @@
 import { useContext, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { UserContext, type UserContextType } from "@/context/UserContext";
-import { Error } from "@/pages/Error.tsx";
 import type { UserRole } from "@/model/user";
+import NotFound from "@/pages/NotFound";
 
 type AuthState = "loading" | "authorized" | "unauthorized";
 
@@ -33,7 +33,7 @@ const RequireAuth = ({ role }: { role?: UserRole }) => {
     return null;
   }
 
-  return authState === "authorized" ? <Outlet /> : <Error />;
+  return authState === "authorized" ? <Outlet /> : <NotFound />;
 };
 
 export default RequireAuth;

@@ -186,6 +186,20 @@ export const Login: React.FC = () => {
                     "Sign In"
                   )}
                 </button>
+
+                {/* Register Link */}
+                <div className="text-center pt-4">
+                  <p className="text-slate-400">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/register")}
+                      className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                    >
+                      Sign up
+                    </button>
+                  </p>
+                </div>
               </Form>
             )}
           </Formik>

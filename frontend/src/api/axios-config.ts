@@ -58,7 +58,7 @@ const needsCsrf = (config: AxiosRequestConfig): boolean => {
 };
 
 const isPublicPage = (): boolean => {
-  const publicUrls = ["/login", "/register", "/verify"];
+  const publicUrls = ["/login", "/register", "/user/activate"];
   return publicUrls.some((url) => window.location?.pathname?.startsWith(url));
 };
 

@@ -5,7 +5,9 @@ import { Login } from "@/pages/Login.tsx";
 import RequireAuth from "./components/RequireAuth";
 import { Home } from "./pages/Home";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import NotFound from "@/pages/NotFound";
+import { NotFound } from "@/pages/NotFound";
+import { Register } from "@/pages/Register";
+import { ActivateAccount } from "@/pages/ActivateAccount";
 
 function App() {
   const client = new QueryClient();
@@ -15,6 +17,8 @@ function App() {
       <UserProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/user/activate" element={<ActivateAccount />} />
 
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
