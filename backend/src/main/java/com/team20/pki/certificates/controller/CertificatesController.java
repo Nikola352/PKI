@@ -2,10 +2,11 @@ package com.team20.pki.certificates.controller;
 
 import com.team20.pki.certificates.dto.CertificateGetResponseDTO;
 import com.team20.pki.certificates.dto.CertificateSelfSignResponseDTO;
-import com.team20.pki.certificates.service.ICertificateService;
+import com.team20.pki.certificates.model.SubjectData;
+import com.team20.pki.certificates.service.certificate.ICertificateService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -18,8 +19,8 @@ public class CertificatesController {
     private final ICertificateService certificateService;
 
     @PostMapping("/self-signed")
-    ResponseEntity<?> generateSelfSigned() throws IOException {
-       CertificateSelfSignResponseDTO response=  certificateService.generateSelfSignedCertificate();
+    ResponseEntity<?> generateSelfSigned(@RequestBody SubjectData data) throws IOException {
+       CertificateSelfSignResponseDTO response=  certificateService.generateSelfSignedCertificate(data);
         return ResponseEntity.ok(response.certificateId.toString());
     }
     @GetMapping( "/{id}")
