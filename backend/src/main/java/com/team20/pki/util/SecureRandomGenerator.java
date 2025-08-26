@@ -12,4 +12,10 @@ public class SecureRandomGenerator {
         secureRandom.nextBytes(randomBytes);
         return base64UrlEncoder.encodeToString(randomBytes);
     }
+
+    public static byte[] generateBytes(int length) {
+        byte[] randomBytes = new byte[length];
+        secureRandom.nextBytes(randomBytes);
+        return randomBytes;
+    }
 }
