@@ -10,11 +10,12 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "certificates")
 public class Certificate {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,4 +38,14 @@ public class Certificate {
 
     @ManyToOne(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     private Certificate parent;
+
+    @Embedded
+    @AttributeOverride(name = "distinguishedName", column = @Column(name = "issuer_dn", nullable = false))
+    private Issuer issuer;
+    @Embedded
+    @AttributeOverride(name = "distinguishedName", column = @Column(name = "subject_dn", nullable = false))
+    private Subject subject;
+
+    @OneToOne(cascade = {CascadeType.REFRESH})
+    private StoredPrivateKey privateKey;
 }
