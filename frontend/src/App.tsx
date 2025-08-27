@@ -9,6 +9,7 @@ import { NotFound } from "@/pages/NotFound";
 import { Register } from "@/pages/Register";
 import { ActivateAccount } from "@/pages/ActivateAccount";
 import { IssueSelfSigned } from "./pages/IssueSelfSigned";
+import { RequestCACertificate } from "./pages/RequestCertificate";
 
 function App() {
   const client = new QueryClient();
@@ -25,6 +26,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route element={<RequireAuth role="ADMINISTRATOR" />}>
               <Route path="/issue-self-signed" element={<IssueSelfSigned />} />
+              <Route path="/issue" element={<RequestCACertificate />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

@@ -37,7 +37,7 @@ public class CertificateGenerator {
         try {
             temporary = generateAESKey();
 
-            PrivateKey decryptedPrivateKey = decryptPrivateKey(parent.getPrivateKey().getKey(), temporary);
+            PrivateKey decryptedPrivateKey = decryptPrivateKey(null, temporary);
             ContentSigner contentSigner = builder.build(decryptedPrivateKey);
 
             X500Name issuerName = parent.getIssuer().toX500Name();
@@ -73,12 +73,11 @@ public class CertificateGenerator {
 
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber) {
+    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair) {
 
         try {
-            KeyPair keyPair = generateKeyPair();
             X500Name issuer = new X500Name("CN=Root Certificate");
-            X500Name subject = issuer; // Self-signed, so subject and issuer are the same
+            X500Name subject = issuer;
 
             Date notBefore = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // yesterday
             Date notAfter = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000); // 1 year from now

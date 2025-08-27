@@ -46,6 +46,6 @@ public class Certificate {
     @AttributeOverride(name = "distinguishedName", column = @Column(name = "subject_dn", nullable = false))
     private Subject subject;
 
-    @OneToOne(cascade = {CascadeType.REFRESH})
-    private StoredPrivateKey privateKey;
+    @Embedded
+    private KeyStoreInfo keyStoreInfo;
 }

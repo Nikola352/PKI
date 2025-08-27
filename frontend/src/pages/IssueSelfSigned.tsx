@@ -21,6 +21,8 @@ interface CertificateFormData {
   initials: string; // Initials
   pseudonym: string; // Pseudonym
   generationQualifier: string; // Generation Qualifier (Jr., Sr., III, etc.)
+  validFrom: string; // Certificate valid from date
+  validTo: string; // Certificate valid to date
 }
 
 interface FormErrors {
@@ -58,6 +60,23 @@ const certificateSchema = yup.object().shape({
   generationQualifier: yup
     .string()
     .max(10, "Generation Qualifier cannot exceed 10 characters"),
+  validFrom: yup
+    .string()
+    .required("Valid From date is required")
+    .matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Invalid date format"),
+  validTo: yup
+    .string()
+    .required("Valid To date is required")
+    .matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Invalid date format")
+    .test(
+      "is-after-valid-from",
+      "Valid To must be after Valid From",
+      function (value) {
+        const { validFrom } = this.parent;
+        if (!validFrom || !value) return true;
+        return new Date(value) > new Date(validFrom);
+      }
+    ),
 });
 
 const createCertificate = async (
@@ -74,6 +93,29 @@ const createCertificate = async (
   );
 
   return certificateResponse.data;
+};
+
+// Helper function to get current date in local datetime-local format
+const getCurrentDateTime = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper function to get date one year from now
+const getOneYearFromNow = (): string => {
+  const oneYear = new Date();
+  oneYear.setFullYear(oneYear.getFullYear() + 1);
+  const year = oneYear.getFullYear();
+  const month = String(oneYear.getMonth() + 1).padStart(2, "0");
+  const day = String(oneYear.getDate()).padStart(2, "0");
+  const hours = String(oneYear.getHours()).padStart(2, "0");
+  const minutes = String(oneYear.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 export const IssueSelfSigned: React.FC = () => {
@@ -93,6 +135,8 @@ export const IssueSelfSigned: React.FC = () => {
     initials: "",
     pseudonym: "",
     generationQualifier: "",
+    validFrom: getCurrentDateTime(),
+    validTo: getOneYearFromNow(),
   });
 
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
@@ -117,6 +161,8 @@ export const IssueSelfSigned: React.FC = () => {
         initials: "",
         pseudonym: "",
         generationQualifier: "",
+        validFrom: getCurrentDateTime(),
+        validTo: getOneYearFromNow(),
       });
       setValidationErrors({});
     },
@@ -168,7 +214,13 @@ export const IssueSelfSigned: React.FC = () => {
     }
 
     const certificateData: Partial<CertificateFormData> = Object.fromEntries(
-      Object.entries(formData).filter(([_, value]) => value.trim() !== "")
+      Object.entries(formData).filter(([key, value]) => {
+        // Always include validity dates even if they're empty strings
+        if (key === "validFrom" || key === "validTo") {
+          return true;
+        }
+        return value.trim() !== "";
+      })
     );
 
     createCertificateMutation.mutate(certificateData);
@@ -206,29 +258,71 @@ export const IssueSelfSigned: React.FC = () => {
               </div>
             )}
 
-            {/* Required Field */}
+            {/* Required Fields */}
             <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
               <h2 className="text-lg font-semibold text-white mb-4">
                 Required Information
               </h2>
 
-              <div>
-                <label htmlFor="cn" className={labelClasses}>
-                  Common Name (CN) <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="cn"
-                  name="cn"
-                  value={formData.cn}
-                  onChange={handleInputChange}
-                  placeholder="e.g., John Doe or example.com"
-                  className={inputClasses("cn")}
-                  required
-                />
-                {validationErrors.cn && (
-                  <p className={errorClasses}>{validationErrors.cn}</p>
-                )}
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="cn" className={labelClasses}>
+                    Common Name (CN) <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="cn"
+                    name="cn"
+                    value={formData.cn}
+                    onChange={handleInputChange}
+                    placeholder="e.g., John Doe or example.com"
+                    className={inputClasses("cn")}
+                    required
+                  />
+                  {validationErrors.cn && (
+                    <p className={errorClasses}>{validationErrors.cn}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="validFrom" className={labelClasses}>
+                      Valid From <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="validFrom"
+                      name="validFrom"
+                      value={formData.validFrom}
+                      onChange={handleInputChange}
+                      className={inputClasses("validFrom")}
+                      required
+                    />
+                    {validationErrors.validFrom && (
+                      <p className={errorClasses}>
+                        {validationErrors.validFrom}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="validTo" className={labelClasses}>
+                      Valid To <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="validTo"
+                      name="validTo"
+                      value={formData.validTo}
+                      onChange={handleInputChange}
+                      className={inputClasses("validTo")}
+                      required
+                    />
+                    {validationErrors.validTo && (
+                      <p className={errorClasses}>{validationErrors.validTo}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
