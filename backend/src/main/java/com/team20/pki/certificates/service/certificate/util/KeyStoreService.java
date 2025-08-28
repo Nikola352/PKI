@@ -1,4 +1,4 @@
-package com.team20.pki.certificates.service.certificate;
+package com.team20.pki.certificates.service.certificate.util;
 
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 
 @Component
-public class KeyStoreService {
+public class KeyStoreService{
     private KeyStore keyStore;
     private final String filePath = "src/main/resources/key-store/";
 

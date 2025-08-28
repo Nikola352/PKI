@@ -1,4 +1,4 @@
-package com.team20.pki.certificates.service.certificate;
+package com.team20.pki.certificates.service.certificate.util;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;

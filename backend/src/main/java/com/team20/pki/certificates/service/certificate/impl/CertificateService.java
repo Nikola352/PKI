@@ -4,6 +4,12 @@ import com.team20.pki.certificates.dto.*;
 import com.team20.pki.certificates.model.*;
 import com.team20.pki.certificates.repository.ICertificateRepository;
 import com.team20.pki.certificates.service.certificate.*;
+import com.team20.pki.certificates.service.certificate.util.CertificateGenerator;
+import com.team20.pki.certificates.service.certificate.util.CertificateToPEMConverter;
+import com.team20.pki.certificates.service.certificate.util.KeyStorePasswordGenerator;
+import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
+import com.team20.pki.common.model.User;
+import com.team20.pki.common.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x500.RDN;
@@ -24,7 +30,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -37,6 +42,7 @@ public class CertificateService implements ICertificateService {
     private final IRSAGenerator rsaGenerator;
     private final KeyStoreService keyStoreService;
     private final KeyStorePasswordGenerator keyStorePasswordGenerator;
+    private final UserRepository userRepository;
 
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
@@ -70,7 +76,8 @@ public class CertificateService implements ICertificateService {
                 null,
                 dummyIssuer,
                 dummySubject,
-                ksInfo
+                ksInfo,
+                null
         );
         keyStoreService.loadKeyStore(null, ksInfo.getKeyStorePassword().toCharArray());
         keyStoreService.write(serialNumber.toString(), keyPair.getPrivate(), keyStorePassword.toCharArray(), cert);
@@ -102,7 +109,7 @@ public class CertificateService implements ICertificateService {
 
             long maxValidity = ChronoUnit.DAYS.between(today, certificate.getValidTo());
 
-            return new CAResponseDTO(certificate.getId(), caName, maxValidity, 1, 20);
+            return new CAResponseDTO(certificate.getId(), caName, maxValidity, 1, 1);
         }).toList();
     }
 
@@ -127,13 +134,14 @@ public class CertificateService implements ICertificateService {
         LocalDateTime today = LocalDateTime.now();
         LocalDateTime withDays = today.plusDays(data.validityDays());
 
-        if(withDays.isAfter(caCertificate.getValidTo()))
-            throw new  IllegalArgumentException("Certificate cannot last longer that its parent CA");
+        if (withDays.isAfter(caCertificate.getValidTo()))
+            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
 
+        User user = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
 
         Certificate certificate = new Certificate(
                 null,
-                CertificateType.ROOT,
+                CertificateType.INTERMEDIATE,
                 cert.getSerialNumber().toString(),
                 pemFile,
                 today,
@@ -141,7 +149,8 @@ public class CertificateService implements ICertificateService {
                 caCertificate,
                 issuer,
                 subject,
-                ksInfo
+                ksInfo,
+                user
         );
         keyStoreService.loadKeyStore(null, ksInfo.getKeyStorePassword().toCharArray());
         keyStoreService.write(serialNumber.toString(), keyPair.getPrivate(), keyStorePassword.toCharArray(), cert);

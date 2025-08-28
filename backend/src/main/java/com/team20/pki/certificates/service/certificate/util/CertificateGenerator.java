@@ -1,4 +1,4 @@
-package com.team20.pki.certificates.service.certificate;
+package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.Subject;

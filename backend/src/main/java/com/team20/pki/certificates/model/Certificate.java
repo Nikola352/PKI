@@ -1,6 +1,7 @@
 package com.team20.pki.certificates.model;
 
 
+import com.team20.pki.common.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -48,4 +49,7 @@ public class Certificate {
 
     @Embedded
     private KeyStoreInfo keyStoreInfo;
+
+    @ManyToOne
+    private User owner;
 }
