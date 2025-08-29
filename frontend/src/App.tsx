@@ -10,7 +10,9 @@ import { Register } from "@/pages/Register";
 import { ActivateAccount } from "@/pages/ActivateAccount";
 import { IssueSelfSigned } from "./pages/IssueSelfSigned";
 import { RequestCACertificate } from "./pages/RequestCertificate";
-
+import CAManagementPage from "./pages/CAManagementPage";
+import { EndEntityCertificateForm } from "./pages/EndEntityCertificate";
+import type { UserRole } from "@/model/user";
 function App() {
   const client = new QueryClient();
 
@@ -25,8 +27,15 @@ function App() {
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
             <Route element={<RequireAuth role="ADMINISTRATOR" />}>
+              <Route path="/view-ca-users" element={<CAManagementPage />} />
               <Route path="/issue-self-signed" element={<IssueSelfSigned />} />
-              <Route path="/issue" element={<RequestCACertificate />} />
+              <Route path="/issue/:caId" element={<RequestCACertificate />} />
+            </Route>
+            <Route element={<RequireAuth role="REGULAR_USER" />}>
+              <Route
+                path="/end-entity"
+                element={<EndEntityCertificateForm />}
+              />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

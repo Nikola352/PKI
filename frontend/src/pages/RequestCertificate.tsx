@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as yup from "yup";
 import api from "@/api/axios-config";
+import { useNavigate, useParams } from "react-router";
 
 const { VITE_API_BASE_URL } = import.meta.env;
-
+interface CAUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  organization: string;
+}
 interface CertificateAuthority {
   id: string;
   name: string;
@@ -14,11 +21,6 @@ interface CertificateAuthority {
   defaultValidityDays: number;
   requiredFields: string[];
   optionalFields: string[];
-  // policies: {
-  //   requiresApproval: boolean;
-  //   autoIssue: boolean;
-  //   maxCertificatesPerUser: number;
-  // };
 }
 const allRdns: Array<keyof CertificateRequestData> = [
   "cn",
@@ -38,6 +40,7 @@ const allRdns: Array<keyof CertificateRequestData> = [
   "generationQualifier",
 ];
 interface CertificateRequestData {
+  subjectId: string;
   caId: string;
   cn: string; // Common Name (required)
   o: string; // Organization
@@ -89,10 +92,19 @@ const fetchCertificateAuthorities = async (): Promise<
 };
 
 export const RequestCACertificate: React.FC = () => {
+  const { caId } = useParams();
   const [selectedCA, setSelectedCA] = useState<CertificateAuthority | null>(
     null
   );
+  useEffect(() => {
+    if (!caId) return;
+    api.get<CAUser>(`${VITE_API_BASE_URL}/api/ca-users/${caId}`).then((res) => {
+      setCaUser(res.data);
+    });
+  }, []);
+  const [caUser, setCaUser] = useState<CAUser | null>(null);
   const [formData, setFormData] = useState<CertificateRequestData>({
+    subjectId: caId ?? "",
     caId: "",
     cn: "",
     o: "",
@@ -125,11 +137,14 @@ export const RequestCACertificate: React.FC = () => {
 
   // Update form when CA is selected
   useEffect(() => {
+    console.log(caUser);
     if (selectedCA) {
       setFormData((prev) => ({
         ...prev,
+        subjectId: caUser?.id ?? "",
         caId: selectedCA.id,
-
+        o: caUser?.organization ?? "",
+        emailAddress: caUser?.email ?? "",
         validityDays: selectedCA.defaultValidityDays,
       }));
 
@@ -328,6 +343,7 @@ export const RequestCACertificate: React.FC = () => {
       console.log("Certificate request submitted successfully:", data);
       // Reset form
       setFormData({
+        subjectId: "",
         caId: "",
         cn: "",
         o: "",
@@ -348,12 +364,13 @@ export const RequestCACertificate: React.FC = () => {
       });
       setSelectedCA(null);
       setValidationErrors({});
+      navigate("/view-ca-users");
     },
     onError: (error) => {
       console.error("Error submitting certificate request:", error);
     },
   });
-
+  const navigate = useNavigate();
   const handleCAChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const caId = e.target.value;
     const ca = certificateAuthorities?.find((ca) => ca.id === caId) || null;
@@ -445,19 +462,20 @@ export const RequestCACertificate: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl bg-slate-800 rounded-xl shadow-2xl border border-slate-700">
-        <div className="p-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Request CA-Signed Certificate
-          </h1>
-          <p className="text-slate-400 mb-8">
-            Select a Certificate Authority and request a certificate following
-            their policies
-          </p>
+      {caUser && (
+        <div className="w-full max-w-4xl bg-slate-800 rounded-xl shadow-2xl border border-slate-700">
+          <div className="p-8">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Request CA-Signed Certificate
+            </h1>
+            <p className="text-slate-400 mb-8">
+              Select a Certificate Authority and request a certificate following
+              their policies
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Success Message */}
-            {/* {createCertificateRequestMutation.isSuccess && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Success Message */}
+              {/* {createCertificateRequestMutation.isSuccess && (
               <div className="mb-4 p-4 bg-green-900 border border-green-700 rounded-lg">
                 <p className="text-green-300">
                   {selectedCA?.policies.autoIssue
@@ -467,62 +485,63 @@ export const RequestCACertificate: React.FC = () => {
               </div>
             )} */}
 
-            {/* CA Selection */}
-            <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                Select Certificate Authority
-              </h2>
+              {/* CA Selection */}
+              <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
+                <h2 className="text-lg font-semibold text-white mb-4">
+                  Select Certificate Authority
+                </h2>
 
-              <div>
-                <label htmlFor="caId" className={labelClasses}>
-                  Certificate Authority <span className="text-red-400">*</span>
-                </label>
-                <select
-                  id="caId"
-                  name="caId"
-                  value={formData.caId}
-                  onChange={handleCAChange}
-                  className={inputClasses("caId")}
-                  required
-                  disabled={loadingCAs}
-                >
-                  <option value="">
-                    {loadingCAs
-                      ? "Loading CAs..."
-                      : "Select a Certificate Authority"}
-                  </option>
-                  {certificateAuthorities?.map((ca) => (
-                    <option key={ca.id} value={ca.id}>
-                      {ca.name}
+                <div>
+                  <label htmlFor="caId" className={labelClasses}>
+                    Certificate Authority{" "}
+                    <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    id="caId"
+                    name="caId"
+                    value={formData.caId}
+                    onChange={handleCAChange}
+                    className={inputClasses("caId")}
+                    required
+                    disabled={loadingCAs}
+                  >
+                    <option value="">
+                      {loadingCAs
+                        ? "Loading CAs..."
+                        : "Select a Certificate Authority"}
                     </option>
-                  ))}
-                </select>
-                {validationErrors.caId && (
-                  <p className={errorClasses}>{validationErrors.caId}</p>
-                )}
-              </div>
+                    {certificateAuthorities?.map((ca) => (
+                      <option key={ca.id} value={ca.id}>
+                        {ca.name}
+                      </option>
+                    ))}
+                  </select>
+                  {validationErrors.caId && (
+                    <p className={errorClasses}>{validationErrors.caId}</p>
+                  )}
+                </div>
 
-              {/* CA Information Display */}
-              {selectedCA && (
-                <div className="mt-6 p-4 bg-slate-600 rounded-lg border border-slate-500">
-                  <h3 className="text-white font-semibold mb-2">
-                    {selectedCA.name}
-                  </h3>
-                  <p className="text-slate-300 text-sm mb-3">
-                    {selectedCA.description}
-                  </p>
+                {/* CA Information Display */}
+                {selectedCA && (
+                  <div className="mt-6 p-4 bg-slate-600 rounded-lg border border-slate-500">
+                    <h3 className="text-white font-semibold mb-2">
+                      {selectedCA.name}
+                    </h3>
+                    <p className="text-slate-300 text-sm mb-3">
+                      {selectedCA.description}
+                    </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-slate-400">Validity Range:</span>
-                      <span className="text-white ml-2">
-                        {selectedCA.minValidityDays} -{" "}
-                        {selectedCA.maxValidityDays} days
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400">Approval:</span>
-                      {/* <span
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-slate-400">Validity Range:</span>
+                        <span className="text-white ml-2">
+                          {selectedCA.minValidityDays} -{" "}
+                          {selectedCA.maxValidityDays} days
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Approval:</span>
+                        {/* <span
                         className={`ml-2 ${
                           selectedCA.policies.requiresApproval
                             ? "text-yellow-300"
@@ -533,501 +552,518 @@ export const RequestCACertificate: React.FC = () => {
                           ? "Manual Review"
                           : "Auto-Approved"}
                       </span> */}
-                    </div>
-                    <div>
-                      {/* <span className="text-slate-400">Max Certificates:</span>
+                      </div>
+                      <div>
+                        {/* <span className="text-slate-400">Max Certificates:</span>
                       <span className="text-white ml-2">
                         {selectedCA.policies.maxCertificatesPerUser}
                       </span> */}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {selectedCA && (
-              <>
-                {/* Certificate Configuration */}
-                <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
-                  <h2 className="text-lg font-semibold text-white mb-4">
-                    Certificate Configuration
-                  </h2>
+              {selectedCA && (
+                <>
+                  {/* Certificate Configuration */}
+                  <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                      Certificate Configuration
+                    </h2>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="validityDays" className={labelClasses}>
-                        Validity Period (Days){" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        id="validityDays"
-                        name="validityDays"
-                        value={formData.validityDays}
-                        onChange={handleInputChange}
-                        min={selectedCA.minValidityDays}
-                        max={selectedCA.maxValidityDays}
-                        className={inputClasses("validityDays")}
-                        required
-                      />
-                      <p className="text-slate-400 text-xs mt-1">
-                        Range: {selectedCA.minValidityDays} -{" "}
-                        {selectedCA.maxValidityDays} days
-                      </p>
-                      {validationErrors.validityDays && (
-                        <p className={errorClasses}>
-                          {validationErrors.validityDays}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="validityDays" className={labelClasses}>
+                          Validity Period (Days){" "}
+                          <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          id="validityDays"
+                          name="validityDays"
+                          value={formData.validityDays}
+                          onChange={handleInputChange}
+                          min={selectedCA.minValidityDays}
+                          max={selectedCA.maxValidityDays}
+                          className={inputClasses("validityDays")}
+                          required
+                        />
+                        <p className="text-slate-400 text-xs mt-1">
+                          Range: {selectedCA.minValidityDays} -{" "}
+                          {selectedCA.maxValidityDays} days
                         </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Subject Information */}
-                <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
-                  <h2 className="text-lg font-semibold text-white mb-4">
-                    Subject Information
-                  </h2>
-
-                  <div className="space-y-6">
-                    {/* Common Name - Always show if visible */}
-                    {isFieldVisible("cn") && (
-                      <div>
-                        <label htmlFor="cn" className={labelClasses}>
-                          Common Name (CN){" "}
-                          {isFieldRequired("cn") && (
-                            <span className="text-red-400">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          id="cn"
-                          name="cn"
-                          value={formData.cn}
-                          onChange={handleInputChange}
-                          placeholder="e.g., John Doe or example.com"
-                          className={inputClasses("cn")}
-                          required={isFieldRequired("cn")}
-                        />
-                        {validationErrors.cn && (
-                          <p className={errorClasses}>{validationErrors.cn}</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Organization Fields */}
-                    {(isFieldVisible("o") || isFieldVisible("ou")) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {isFieldVisible("o") && (
-                          <div>
-                            <label htmlFor="o" className={labelClasses}>
-                              Organization (O){" "}
-                              {isFieldRequired("o") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="o"
-                              name="o"
-                              value={formData.o}
-                              onChange={handleInputChange}
-                              placeholder="e.g., Acme Corporation"
-                              className={inputClasses("o")}
-                              required={isFieldRequired("o")}
-                            />
-                            {validationErrors.o && (
-                              <p className={errorClasses}>
-                                {validationErrors.o}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {isFieldVisible("ou") && (
-                          <div>
-                            <label htmlFor="ou" className={labelClasses}>
-                              Organizational Unit (OU){" "}
-                              {isFieldRequired("ou") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="ou"
-                              name="ou"
-                              value={formData.ou}
-                              onChange={handleInputChange}
-                              placeholder="e.g., IT Department"
-                              className={inputClasses("ou")}
-                              required={isFieldRequired("ou")}
-                            />
-                            {validationErrors.ou && (
-                              <p className={errorClasses}>
-                                {validationErrors.ou}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Location Fields */}
-                    {(isFieldVisible("c") ||
-                      isFieldVisible("st") ||
-                      isFieldVisible("l")) && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {isFieldVisible("c") && (
-                          <div>
-                            <label htmlFor="c" className={labelClasses}>
-                              Country (C){" "}
-                              {isFieldRequired("c") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="c"
-                              name="c"
-                              value={formData.c}
-                              onChange={handleInputChange}
-                              placeholder="e.g., US"
-                              maxLength={2}
-                              className={inputClasses("c")}
-                              style={{ textTransform: "uppercase" }}
-                              required={isFieldRequired("c")}
-                            />
-                            {validationErrors.c && (
-                              <p className={errorClasses}>
-                                {validationErrors.c}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {isFieldVisible("st") && (
-                          <div>
-                            <label htmlFor="st" className={labelClasses}>
-                              State/Province (ST){" "}
-                              {isFieldRequired("st") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="st"
-                              name="st"
-                              value={formData.st}
-                              onChange={handleInputChange}
-                              placeholder="e.g., California"
-                              className={inputClasses("st")}
-                              required={isFieldRequired("st")}
-                            />
-                            {validationErrors.st && (
-                              <p className={errorClasses}>
-                                {validationErrors.st}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {isFieldVisible("l") && (
-                          <div>
-                            <label htmlFor="l" className={labelClasses}>
-                              Locality/City (L){" "}
-                              {isFieldRequired("l") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="l"
-                              name="l"
-                              value={formData.l}
-                              onChange={handleInputChange}
-                              placeholder="e.g., San Francisco"
-                              className={inputClasses("l")}
-                              required={isFieldRequired("l")}
-                            />
-                            {validationErrors.l && (
-                              <p className={errorClasses}>
-                                {validationErrors.l}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Personal Information */}
-                    {(isFieldVisible("givenName") ||
-                      isFieldVisible("surname") ||
-                      isFieldVisible("title")) && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {isFieldVisible("givenName") && (
-                          <div>
-                            <label htmlFor="givenName" className={labelClasses}>
-                              Given Name{" "}
-                              {isFieldRequired("givenName") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="givenName"
-                              name="givenName"
-                              value={formData.givenName}
-                              onChange={handleInputChange}
-                              placeholder="e.g., John"
-                              className={inputClasses("givenName")}
-                              required={isFieldRequired("givenName")}
-                            />
-                            {validationErrors.givenName && (
-                              <p className={errorClasses}>
-                                {validationErrors.givenName}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {isFieldVisible("surname") && (
-                          <div>
-                            <label htmlFor="surname" className={labelClasses}>
-                              Surname{" "}
-                              {isFieldRequired("surname") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="surname"
-                              name="surname"
-                              value={formData.surname}
-                              onChange={handleInputChange}
-                              placeholder="e.g., Doe"
-                              className={inputClasses("surname")}
-                              required={isFieldRequired("surname")}
-                            />
-                            {validationErrors.surname && (
-                              <p className={errorClasses}>
-                                {validationErrors.surname}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {isFieldVisible("title") && (
-                          <div>
-                            <label htmlFor="title" className={labelClasses}>
-                              Title{" "}
-                              {isFieldRequired("title") && (
-                                <span className="text-red-400">*</span>
-                              )}
-                            </label>
-                            <input
-                              type="text"
-                              id="title"
-                              name="title"
-                              value={formData.title}
-                              onChange={handleInputChange}
-                              placeholder="e.g., Software Engineer"
-                              className={inputClasses("title")}
-                              required={isFieldRequired("title")}
-                            />
-                            {validationErrors.title && (
-                              <p className={errorClasses}>
-                                {validationErrors.title}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Email Address */}
-                    {isFieldVisible("emailAddress") && (
-                      <div>
-                        <label htmlFor="emailAddress" className={labelClasses}>
-                          Email Address{" "}
-                          {isFieldRequired("emailAddress") && (
-                            <span className="text-red-400">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="email"
-                          id="emailAddress"
-                          name="emailAddress"
-                          value={formData.emailAddress}
-                          onChange={handleInputChange}
-                          placeholder="e.g., john.doe@example.com"
-                          className={inputClasses("emailAddress")}
-                          required={isFieldRequired("emailAddress")}
-                        />
-                        {validationErrors.emailAddress && (
+                        {validationErrors.validityDays && (
                           <p className={errorClasses}>
-                            {validationErrors.emailAddress}
+                            {validationErrors.validityDays}
                           </p>
                         )}
                       </div>
-                    )}
+                    </div>
+                  </div>
 
-                    {/* Additional Optional Fields */}
-                    {(isFieldVisible("street") ||
-                      selectedCA.optionalFields.includes("initials") ||
-                      selectedCA.optionalFields.includes("pseudonym") ||
-                      selectedCA.optionalFields.includes(
-                        "generationQualifier"
-                      ) ||
-                      selectedCA.optionalFields.includes("serialNumber")) && (
-                      <div className="border-t border-slate-600 pt-6">
-                        <h3 className="text-md font-medium text-slate-200 mb-4">
-                          Additional Information
-                        </h3>
+                  {/* Subject Information */}
+                  <div className="bg-slate-750 p-6 rounded-lg border border-slate-600">
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                      Subject Information
+                    </h2>
 
+                    <div className="space-y-6">
+                      {/* Common Name - Always show if visible */}
+                      {isFieldVisible("cn") && (
+                        <div>
+                          <label htmlFor="cn" className={labelClasses}>
+                            Common Name (CN){" "}
+                            {isFieldRequired("cn") && (
+                              <span className="text-red-400">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            id="cn"
+                            name="cn"
+                            value={formData.cn}
+                            onChange={handleInputChange}
+                            placeholder="e.g., John Doe or example.com"
+                            className={inputClasses("cn")}
+                            required={isFieldRequired("cn")}
+                          />
+                          {validationErrors.cn && (
+                            <p className={errorClasses}>
+                              {validationErrors.cn}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Organization Fields */}
+                      {(isFieldVisible("o") || isFieldVisible("ou")) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {isFieldVisible("street") && (
+                          {isFieldVisible("o") && (
                             <div>
-                              <label htmlFor="street" className={labelClasses}>
-                                Street Address
+                              <label htmlFor="o" className={labelClasses}>
+                                Organization (O){" "}
+                                {isFieldRequired("o") && (
+                                  <span className="text-red-400">*</span>
+                                )}
                               </label>
                               <input
                                 type="text"
-                                id="street"
-                                name="street"
-                                value={formData.street}
+                                id="o"
+                                name="o"
+                                readOnly
+                                value={formData.o}
                                 onChange={handleInputChange}
-                                placeholder="e.g., 123 Main Street"
-                                className={inputClasses("street")}
+                                placeholder="e.g., Acme Corporation"
+                                className={inputClasses("o")}
+                                required={isFieldRequired("o")}
                               />
-                              {validationErrors.street && (
+                              {validationErrors.o && (
                                 <p className={errorClasses}>
-                                  {validationErrors.street}
+                                  {validationErrors.o}
                                 </p>
                               )}
                             </div>
                           )}
 
-                          {selectedCA.optionalFields.includes(
-                            "serialNumber"
-                          ) && (
+                          {isFieldVisible("ou") && (
                             <div>
-                              <label
-                                htmlFor="serialNumber"
-                                className={labelClasses}
-                              >
-                                Serial Number
+                              <label htmlFor="ou" className={labelClasses}>
+                                Organizational Unit (OU){" "}
+                                {isFieldRequired("ou") && (
+                                  <span className="text-red-400">*</span>
+                                )}
                               </label>
                               <input
                                 type="text"
-                                id="serialNumber"
-                                name="serialNumber"
-                                value={formData.serialNumber}
+                                id="ou"
+                                name="ou"
+                                value={formData.ou}
                                 onChange={handleInputChange}
-                                placeholder="e.g., 123456789"
-                                className={inputClasses("serialNumber")}
+                                placeholder="e.g., IT Department"
+                                className={inputClasses("ou")}
+                                required={isFieldRequired("ou")}
                               />
-                              {validationErrors.serialNumber && (
+                              {validationErrors.ou && (
                                 <p className={errorClasses}>
-                                  {validationErrors.serialNumber}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {selectedCA.optionalFields.includes("initials") && (
-                            <div>
-                              <label
-                                htmlFor="initials"
-                                className={labelClasses}
-                              >
-                                Initials
-                              </label>
-                              <input
-                                type="text"
-                                id="initials"
-                                name="initials"
-                                value={formData.initials}
-                                onChange={handleInputChange}
-                                placeholder="e.g., J.D."
-                                className={inputClasses("initials")}
-                              />
-                              {validationErrors.initials && (
-                                <p className={errorClasses}>
-                                  {validationErrors.initials}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {selectedCA.optionalFields.includes("pseudonym") && (
-                            <div>
-                              <label
-                                htmlFor="pseudonym"
-                                className={labelClasses}
-                              >
-                                Pseudonym
-                              </label>
-                              <input
-                                type="text"
-                                id="pseudonym"
-                                name="pseudonym"
-                                value={formData.pseudonym}
-                                onChange={handleInputChange}
-                                placeholder="e.g., JDoe"
-                                className={inputClasses("pseudonym")}
-                              />
-                              {validationErrors.pseudonym && (
-                                <p className={errorClasses}>
-                                  {validationErrors.pseudonym}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {selectedCA.optionalFields.includes(
-                            "generationQualifier"
-                          ) && (
-                            <div>
-                              <label
-                                htmlFor="generationQualifier"
-                                className={labelClasses}
-                              >
-                                Generation Qualifier
-                              </label>
-                              <input
-                                type="text"
-                                id="generationQualifier"
-                                name="generationQualifier"
-                                value={formData.generationQualifier}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Jr., Sr., III"
-                                className={inputClasses("generationQualifier")}
-                              />
-                              {validationErrors.generationQualifier && (
-                                <p className={errorClasses}>
-                                  {validationErrors.generationQualifier}
+                                  {validationErrors.ou}
                                 </p>
                               )}
                             </div>
                           )}
                         </div>
+                      )}
+
+                      {/* Location Fields */}
+                      {(isFieldVisible("c") ||
+                        isFieldVisible("st") ||
+                        isFieldVisible("l")) && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {isFieldVisible("c") && (
+                            <div>
+                              <label htmlFor="c" className={labelClasses}>
+                                Country (C){" "}
+                                {isFieldRequired("c") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="c"
+                                name="c"
+                                value={formData.c}
+                                onChange={handleInputChange}
+                                placeholder="e.g., US"
+                                maxLength={2}
+                                className={inputClasses("c")}
+                                style={{ textTransform: "uppercase" }}
+                                required={isFieldRequired("c")}
+                              />
+                              {validationErrors.c && (
+                                <p className={errorClasses}>
+                                  {validationErrors.c}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {isFieldVisible("st") && (
+                            <div>
+                              <label htmlFor="st" className={labelClasses}>
+                                State/Province (ST){" "}
+                                {isFieldRequired("st") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="st"
+                                name="st"
+                                value={formData.st}
+                                onChange={handleInputChange}
+                                placeholder="e.g., California"
+                                className={inputClasses("st")}
+                                required={isFieldRequired("st")}
+                              />
+                              {validationErrors.st && (
+                                <p className={errorClasses}>
+                                  {validationErrors.st}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {isFieldVisible("l") && (
+                            <div>
+                              <label htmlFor="l" className={labelClasses}>
+                                Locality/City (L){" "}
+                                {isFieldRequired("l") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="l"
+                                name="l"
+                                value={formData.l}
+                                onChange={handleInputChange}
+                                placeholder="e.g., San Francisco"
+                                className={inputClasses("l")}
+                                required={isFieldRequired("l")}
+                              />
+                              {validationErrors.l && (
+                                <p className={errorClasses}>
+                                  {validationErrors.l}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Personal Information */}
+                      {(isFieldVisible("givenName") ||
+                        isFieldVisible("surname") ||
+                        isFieldVisible("title")) && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {isFieldVisible("givenName") && (
+                            <div>
+                              <label
+                                htmlFor="givenName"
+                                className={labelClasses}
+                              >
+                                Given Name{" "}
+                                {isFieldRequired("givenName") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="givenName"
+                                name="givenName"
+                                value={formData.givenName}
+                                onChange={handleInputChange}
+                                placeholder="e.g., John"
+                                className={inputClasses("givenName")}
+                                required={isFieldRequired("givenName")}
+                              />
+                              {validationErrors.givenName && (
+                                <p className={errorClasses}>
+                                  {validationErrors.givenName}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {isFieldVisible("surname") && (
+                            <div>
+                              <label htmlFor="surname" className={labelClasses}>
+                                Surname{" "}
+                                {isFieldRequired("surname") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="surname"
+                                name="surname"
+                                value={formData.surname}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Doe"
+                                className={inputClasses("surname")}
+                                required={isFieldRequired("surname")}
+                              />
+                              {validationErrors.surname && (
+                                <p className={errorClasses}>
+                                  {validationErrors.surname}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {isFieldVisible("title") && (
+                            <div>
+                              <label htmlFor="title" className={labelClasses}>
+                                Title{" "}
+                                {isFieldRequired("title") && (
+                                  <span className="text-red-400">*</span>
+                                )}
+                              </label>
+                              <input
+                                type="text"
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Software Engineer"
+                                className={inputClasses("title")}
+                                required={isFieldRequired("title")}
+                              />
+                              {validationErrors.title && (
+                                <p className={errorClasses}>
+                                  {validationErrors.title}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Email Address */}
+                      {isFieldVisible("emailAddress") && (
+                        <div>
+                          <label
+                            htmlFor="emailAddress"
+                            className={labelClasses}
+                          >
+                            Email Address{" "}
+                            {isFieldRequired("emailAddress") && (
+                              <span className="text-red-400">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="email"
+                            id="emailAddress"
+                            name="emailAddress"
+                            readOnly
+                            value={formData.emailAddress}
+                            onChange={handleInputChange}
+                            placeholder="e.g., john.doe@example.com"
+                            className={inputClasses("emailAddress")}
+                            required={isFieldRequired("emailAddress")}
+                          />
+                          {validationErrors.emailAddress && (
+                            <p className={errorClasses}>
+                              {validationErrors.emailAddress}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Additional Optional Fields */}
+                      {(isFieldVisible("street") ||
+                        selectedCA.optionalFields.includes("initials") ||
+                        selectedCA.optionalFields.includes("pseudonym") ||
+                        selectedCA.optionalFields.includes(
+                          "generationQualifier"
+                        ) ||
+                        selectedCA.optionalFields.includes("serialNumber")) && (
+                        <div className="border-t border-slate-600 pt-6">
+                          <h3 className="text-md font-medium text-slate-200 mb-4">
+                            Additional Information
+                          </h3>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {isFieldVisible("street") && (
+                              <div>
+                                <label
+                                  htmlFor="street"
+                                  className={labelClasses}
+                                >
+                                  Street Address
+                                </label>
+                                <input
+                                  type="text"
+                                  id="street"
+                                  name="street"
+                                  value={formData.street}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., 123 Main Street"
+                                  className={inputClasses("street")}
+                                />
+                                {validationErrors.street && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.street}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {selectedCA.optionalFields.includes(
+                              "serialNumber"
+                            ) && (
+                              <div>
+                                <label
+                                  htmlFor="serialNumber"
+                                  className={labelClasses}
+                                >
+                                  Serial Number
+                                </label>
+                                <input
+                                  type="text"
+                                  id="serialNumber"
+                                  name="serialNumber"
+                                  value={formData.serialNumber}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., 123456789"
+                                  className={inputClasses("serialNumber")}
+                                />
+                                {validationErrors.serialNumber && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.serialNumber}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {selectedCA.optionalFields.includes("initials") && (
+                              <div>
+                                <label
+                                  htmlFor="initials"
+                                  className={labelClasses}
+                                >
+                                  Initials
+                                </label>
+                                <input
+                                  type="text"
+                                  id="initials"
+                                  name="initials"
+                                  value={formData.initials}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., J.D."
+                                  className={inputClasses("initials")}
+                                />
+                                {validationErrors.initials && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.initials}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {selectedCA.optionalFields.includes(
+                              "pseudonym"
+                            ) && (
+                              <div>
+                                <label
+                                  htmlFor="pseudonym"
+                                  className={labelClasses}
+                                >
+                                  Pseudonym
+                                </label>
+                                <input
+                                  type="text"
+                                  id="pseudonym"
+                                  name="pseudonym"
+                                  value={formData.pseudonym}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., JDoe"
+                                  className={inputClasses("pseudonym")}
+                                />
+                                {validationErrors.pseudonym && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.pseudonym}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {selectedCA.optionalFields.includes(
+                              "generationQualifier"
+                            ) && (
+                              <div>
+                                <label
+                                  htmlFor="generationQualifier"
+                                  className={labelClasses}
+                                >
+                                  Generation Qualifier
+                                </label>
+                                <input
+                                  type="text"
+                                  id="generationQualifier"
+                                  name="generationQualifier"
+                                  value={formData.generationQualifier}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., Jr., Sr., III"
+                                  className={inputClasses(
+                                    "generationQualifier"
+                                  )}
+                                />
+                                {validationErrors.generationQualifier && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.generationQualifier}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Submit Button and Errors */}
+                  <div className="pt-6">
+                    {submitError && (
+                      <div className="mb-4 p-4 bg-red-900 border border-red-700 rounded-lg">
+                        <p className="text-red-300">
+                          Failed to submit certificate request:{" "}
+                          {submitError.message || "Please try again."}
+                        </p>
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {/* Submit Button and Errors */}
-                <div className="pt-6">
-                  {submitError && (
-                    <div className="mb-4 p-4 bg-red-900 border border-red-700 rounded-lg">
-                      <p className="text-red-300">
-                        Failed to submit certificate request:{" "}
-                        {submitError.message || "Please try again."}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* {selectedCA.policies.requiresApproval && (
+                    {/* {selectedCA.policies.requiresApproval && (
                     <div className="mb-4 p-4 bg-yellow-900 border border-yellow-700 rounded-lg">
                       <p className="text-yellow-300">
                         <strong>Note:</strong> This CA requires manual approval.
@@ -1037,45 +1073,46 @@ export const RequestCACertificate: React.FC = () => {
                     </div>
                   )} */}
 
-                  <button
-                    type="submit"
-                    disabled={isLoading || !selectedCA}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        {/* {selectedCA?.policies.requiresApproval
+                    <button
+                      type="submit"
+                      disabled={isLoading || !selectedCA}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          {/* {selectedCA?.policies.requiresApproval
                           ? "Submitting Request..."
                           : "Creating Certificate..."} */}
-                        "Submitting..."
-                      </div>
-                    ) : (
-                      <>
-                        {/* {selectedCA?.policies.requiresApproval
+                          "Submitting..."
+                        </div>
+                      ) : (
+                        <>
+                          {/* {selectedCA?.policies.requiresApproval
                           ? "Submit Certificate Request"
                           : "Request Certificate"}
                         {selectedCA?.policies.autoIssue && " (Auto-Approved)"} */}
-                        "Create cert"
-                      </>
-                    )}
-                  </button>
+                          "Create cert"
+                        </>
+                      )}
+                    </button>
 
-                  {selectedCA && (
-                    <div className="mt-4 text-center">
-                      {/* <p className="text-slate-400 text-sm">
+                    {selectedCA && (
+                      <div className="mt-4 text-center">
+                        {/* <p className="text-slate-400 text-sm">
                         You can request up to{" "}
                         {selectedCA.policies.maxCertificatesPerUser}{" "}
                         certificates from this CA
                       </p> */}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </form>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

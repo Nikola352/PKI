@@ -1,9 +1,11 @@
 package com.team20.pki.certificates.controller;
 
+import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
 import com.team20.pki.certificates.service.certificate.ICertificateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -26,8 +28,8 @@ public class CertificatesController {
     }
 
     @PostMapping("/ca-issued")
-    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
-        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(data);
+    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@AuthenticationPrincipal UserDetailsImpl user, @RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
+        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(user,data);
         return ResponseEntity.ok(response);
     }
 

@@ -1,5 +1,6 @@
 package com.team20.pki.certificates.service.certificate.impl;
 
+import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
 import com.team20.pki.certificates.model.*;
 import com.team20.pki.certificates.repository.ICertificateRepository;
@@ -114,7 +115,9 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+    public CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl userAuth, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+        User.Role role = userAuth.getUserRole();
+        CertificateType certificateType = role.equals(User.Role.REGULAR_USER) ? CertificateType.END_ENTITY : CertificateType.INTERMEDIATE;
         Certificate caCertificate = repository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
 
         Issuer issuer = caCertificate.getIssuer();
@@ -140,8 +143,7 @@ public class CertificateService implements ICertificateService {
         User user = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
 
         Certificate certificate = new Certificate(
-                null,
-                CertificateType.INTERMEDIATE,
+                null,certificateType,
                 cert.getSerialNumber().toString(),
                 pemFile,
                 today,

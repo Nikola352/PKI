@@ -86,13 +86,7 @@ const createCertificate = async (
     `${VITE_API_BASE_URL}/api/certificates/self-signed`,
     data
   );
-
-  const id: string = response.data;
-  const certificateResponse = await api.get(
-    `${VITE_API_BASE_URL}/api/certificates/${id}`
-  );
-
-  return certificateResponse.data;
+  return response.data;
 };
 
 // Helper function to get current date in local datetime-local format

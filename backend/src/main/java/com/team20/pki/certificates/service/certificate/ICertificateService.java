@@ -1,5 +1,6 @@
 package com.team20.pki.certificates.service.certificate;
 
+import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
 
 import java.io.IOException;
@@ -16,5 +17,5 @@ public interface ICertificateService {
 
     List<CAResponseDTO> getCertificateAuthorities();
 
-    CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException;
+    CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl user, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException;
 }
