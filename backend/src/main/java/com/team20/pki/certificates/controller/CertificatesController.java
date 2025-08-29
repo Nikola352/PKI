@@ -4,6 +4,9 @@ import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
 import com.team20.pki.certificates.service.certificate.ICertificateService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -44,5 +47,12 @@ public class CertificatesController {
 
         List<CAResponseDTO> response = certificateService.getCertificateAuthorities();
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadCertficate(@PathVariable("id") UUID id){
+        CertificateDownloadResponseDTO downloadResponse = certificateService.downloadCertificateUser(id);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\""+downloadResponse.fileName()+"\"")
+                .contentType(MediaType.valueOf("application/x-pem-file"))
+                .body(downloadResponse.certificateBytes());
     }
 }

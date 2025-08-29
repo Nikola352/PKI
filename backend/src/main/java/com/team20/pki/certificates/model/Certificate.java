@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -32,10 +33,10 @@ public class Certificate {
     private String pemFile;
 
     @Column(nullable = false)
-    private LocalDateTime validFrom;
+    private LocalDate validFrom;
 
     @Column(nullable = false)
-    private LocalDateTime validTo;
+    private LocalDate validTo;
 
     @ManyToOne(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     private Certificate parent;

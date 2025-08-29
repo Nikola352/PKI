@@ -43,6 +43,25 @@ const certificateApi = {
       ),
     }));
   },
+  download: async (certId: string) => {
+    const response = await api.get(
+      `${VITE_API_BASE_URL}/api/certificates/${certId}/download`,
+      {
+        responseType: "blob",
+      }
+    );
+    const blob = new Blob([response.data], { type: "application/x-pem-file" });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `certificate-${certId}.pem`; // customize filename if needed
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+  },
 };
 interface CertificateAuthority {
   id: string;
@@ -192,7 +211,7 @@ export const EndEntityCertificateForm: React.FC = () => {
   const createCertificateRequestMutation = useMutation({
     mutationFn: (data: Partial<CertificateRequestData>) =>
       certificateApi.post(data),
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       console.log("Certificate request submitted successfully:", data);
       // Reset form
       setFormData({
@@ -210,6 +229,7 @@ export const EndEntityCertificateForm: React.FC = () => {
       });
       setSelectedCA(null);
       setValidationErrors({});
+      await certificateApi.download(data.data.certificateId);
     },
     onError: (error: any) => {
       console.error("Error submitting certificate request:", error);

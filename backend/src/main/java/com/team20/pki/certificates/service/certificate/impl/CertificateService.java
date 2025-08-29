@@ -22,13 +22,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -44,47 +47,38 @@ public class CertificateService implements ICertificateService {
     private final KeyStoreService keyStoreService;
     private final KeyStorePasswordGenerator keyStorePasswordGenerator;
     private final UserRepository userRepository;
+    private final ICertificateFactory certificateFactory;
 
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
 
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
 
-        Subject dummySubject = new Subject(name);
-        Issuer dummyIssuer = new Issuer(name);
-        BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis());
-
+        BigInteger serial = generateSerialNumber();
         KeyPair keyPair = rsaGenerator.generateKeyPair();
-        X509Certificate cert = generator.generateSelfSignedCertificate(serialNumber, keyPair);
+
+        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair);
         String pemFile = pemConverter.convertToPEM(cert);
 
+        LocalDate from = LocalDate.parse(selfSignSubjectDataDTO.validFrom());
+        LocalDate to = LocalDate.parse(selfSignSubjectDataDTO.validTo());
 
-        StoredPrivateKey privateKey = new StoredPrivateKey(null, keyPair.getPrivate().getEncoded());
+        KeyStoreInfo ksInfo = new KeyStoreInfo(serial.toString(), keyStorePasswordGenerator.generatePassword(16));
 
-        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
-        KeyStoreInfo ksInfo = new KeyStoreInfo(serialNumber.toString(), keyStorePassword);
-
-        LocalDateTime from = LocalDateTime.parse(selfSignSubjectDataDTO.validFrom());
-        LocalDateTime to = LocalDateTime.parse(selfSignSubjectDataDTO.validTo());
-
-        Certificate certificate = new Certificate(
-                null,
+        Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
-                cert.getSerialNumber().toString(),
+                serial.toString(),
                 pemFile,
                 from,
                 to,
                 null,
-                dummyIssuer,
-                dummySubject,
+                new Issuer(name),
+                new Subject(name),
                 ksInfo,
                 null
         );
-        keyStoreService.loadKeyStore(null, ksInfo.getKeyStorePassword().toCharArray());
-        keyStoreService.write(serialNumber.toString(), keyPair.getPrivate(), keyStorePassword.toCharArray(), cert);
-        keyStoreService.saveKeyStore(serialNumber.toString(), keyStorePassword.toCharArray());
 
-        repository.save(certificate);
+        persistCertificate(ksInfo, serial.toString(), keyPair, cert, certificate);
         return new CertificateSelfSignResponseDTO(certificate.getId());
     }
 
@@ -116,51 +110,70 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl userAuth, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
-        User.Role role = userAuth.getUserRole();
-        CertificateType certificateType = role.equals(User.Role.REGULAR_USER) ? CertificateType.END_ENTITY : CertificateType.INTERMEDIATE;
+
+        CertificateType certificateType = declareCertificateType(userAuth);
         Certificate caCertificate = repository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
 
-        Issuer issuer = caCertificate.getIssuer();
 
+        Issuer issuer = caCertificate.getIssuer();
         X500Name subjectName = x500NameService.createX500Name(data);
         Subject subject = new Subject(subjectName);
 
         BigInteger serialNumber = BigInteger.valueOf(System.currentTimeMillis());
 
+        LocalDate today = LocalDate.now();
+        LocalDate withDays = today.plusDays(data.validityDays());
+
         KeyPair keyPair = rsaGenerator.generateKeyPair();
-        X509Certificate cert = generator.generateSelfSignedCertificate(serialNumber, keyPair);
+        KeyStoreInfo parentKeyStore = caCertificate.getKeyStoreInfo();
+        PrivateKey parentPrivateKey = keyStoreService.readPrivateKey(parentKeyStore.getKeyStorePath(), parentKeyStore.getKeyStorePassword(), caCertificate.getSerialNumber(), parentKeyStore.getKeyStorePassword());
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
         String pemFile = pemConverter.convertToPEM(cert);
 
-        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
-        KeyStoreInfo ksInfo = new KeyStoreInfo(serialNumber.toString(), keyStorePassword);
-
-        LocalDateTime today = LocalDateTime.now();
-        LocalDateTime withDays = today.plusDays(data.validityDays());
 
         if (withDays.isAfter(caCertificate.getValidTo()))
             throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
 
         User user = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
 
-        Certificate certificate = new Certificate(
-                null,certificateType,
-                cert.getSerialNumber().toString(),
-                pemFile,
-                today,
-                withDays,
-                caCertificate,
-                issuer,
-                subject,
-                ksInfo,
-                user
-        );
-        keyStoreService.loadKeyStore(null, ksInfo.getKeyStorePassword().toCharArray());
-        keyStoreService.write(serialNumber.toString(), keyPair.getPrivate(), keyStorePassword.toCharArray(), cert);
-        keyStoreService.saveKeyStore(serialNumber.toString(), keyStorePassword.toCharArray());
+        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
+        KeyStoreInfo ksInfo = new KeyStoreInfo(serialNumber.toString(), keyStorePassword);
+        Certificate certificate = certificateFactory.createCertificate(certificateType, cert.getSerialNumber().toString(), pemFile, today, withDays, caCertificate, issuer, subject, ksInfo, user);
 
-        repository.save(certificate);
+        persistCertificate(ksInfo, serialNumber.toString(), keyPair, cert, certificate);
         return new CertificateCaSignResponseDTO(certificate.getId());
 
+    }
+
+    @Override
+    public CertificateDownloadResponseDTO downloadCertificateUser(UUID id) {
+        Certificate certificate = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Certificate not found"));
+
+        String pem = certificate.getPemFile();
+
+        byte[] pemBytes = pem.getBytes(StandardCharsets.UTF_8);
+        String fileName = "certificate-" + certificate.getSerialNumber() + ".pem";
+        return new CertificateDownloadResponseDTO(pemBytes, fileName);
+    }
+
+    private CertificateType declareCertificateType(UserDetailsImpl userDetails) {
+        User.Role role = userDetails.getUserRole();
+        return role.equals(User.Role.REGULAR_USER) ? CertificateType.END_ENTITY : CertificateType.INTERMEDIATE;
+    }
+
+    private void persistCertificate(KeyStoreInfo ksInfo, String serialNumber, KeyPair keyPair, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
+        String keyStorePassword = ksInfo.getKeyStorePassword();
+        ;
+        keyStoreService.loadKeyStore(null, ksInfo.getKeyStorePassword().toCharArray());
+        keyStoreService.write(serialNumber, keyPair.getPrivate(), keyStorePassword.toCharArray(), cert);
+        keyStoreService.saveKeyStore(serialNumber, keyStorePassword.toCharArray());
+
+        repository.save(certificate);
+    }
+
+    private BigInteger generateSerialNumber() {
+        return BigInteger.valueOf(System.currentTimeMillis());
     }
 
 
