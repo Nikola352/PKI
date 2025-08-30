@@ -24,4 +24,14 @@ public class EmailService {
             log.warn("Failed to send account activation email for request: {}", registerRequest.getId());
         }
     }
+
+    @Async
+    public void sendInvitationEmail(RegisterRequest registerRequest, String verificationCode) {
+        EmailDto email = emailGeneratorService.getInvitationEmail(registerRequest, verificationCode);
+        try {
+            emailSenderService.sendEmail(email);
+        } catch (EmailSendFailedException e) {
+            log.warn("Failed to send invitation email for request: {}", registerRequest.getId());
+        }
+    }
 }

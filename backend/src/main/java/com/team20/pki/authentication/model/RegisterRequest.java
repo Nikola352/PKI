@@ -1,5 +1,6 @@
 package com.team20.pki.authentication.model;
 
+import com.team20.pki.common.model.User;
 import com.team20.pki.util.ValidationPatterns;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,7 +17,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "register_requests")
+@Table(
+        name = "register_requests",
+        indexes = {
+                @Index(name = "idx_register_request_verification_code", columnList = "verificationCode", unique = true),
+                @Index(name = "idx_register_request_expiration", columnList = "expirationTime"),
+        }
+)
 public class RegisterRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -39,8 +46,7 @@ public class RegisterRequest {
     @Column(nullable = false)
     private String email;
 
-    @NotNull(message = "Password is required")
-    @Column(nullable = false)
+    // only for regular user requests (self sign-up)
     private String password;
 
     @NotEmpty(message = "First name is required")
@@ -54,6 +60,10 @@ public class RegisterRequest {
     @NotEmpty(message = "Organization name is required")
     @Column(nullable = false)
     private String organization;
+
+    @NotNull(message = "Role is required")
+    @Column(nullable = false)
+    private User.Role role;
 
     public String getFullName() {
         return firstName + " " + lastName;

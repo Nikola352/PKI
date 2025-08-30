@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,25 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/invite")
+    @Secured("ROLE_ADMIN")
+    public ResponseEntity<RegisterResponseDto> inviteCaUser(@Valid @RequestBody InviteRequestDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.inviteCaUser(dto));
+    }
+
+    @GetMapping("/verification-subject")
+    public ResponseEntity<VerificationCheckResponseDto> getPendingVerificationSubject(
+            @Valid @ModelAttribute VerificationCodeRequestDto dto
+    ) {
+        return ResponseEntity.ok(authService.getPendingVerificationSubject(dto));
+    }
+
+    @PostMapping("/activate/ca")
+    public ResponseEntity<Void> activateCaAccount(@Valid @RequestBody CaVerificationRequestDto dto) {
+        authService.activateAccount(dto);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
             @Valid @RequestBody LoginRequestDto loginRequestDto,
@@ -52,7 +72,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         RefreshTokenVerificationResult result = refreshTokenService.verifyRefreshToken(refreshToken);
-        if(result.isValid()) {
+        if (result.isValid()) {
             Cookie refreshTokenCookie = refreshTokenService.getRotatedRefreshTokenCookie(result.getRefreshToken());
             String jwt = jwtService.generateAccessToken(new UserDetailsImpl(result.getRefreshToken().getUser()));
             response.addCookie(refreshTokenCookie);
@@ -64,14 +84,16 @@ public class AuthController {
         }
     }
 
-    /** Refresh access token but return user data as well. Useful for initial page load. */
+    /**
+     * Refresh access token but return user data as well. Useful for initial page load.
+     */
     @GetMapping("/refresh/user")
     public ResponseEntity<LoginResponseDto> getCurrentUser(
             @CookieValue(value = RefreshTokenService.COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response
     ) {
         RefreshTokenVerificationResult result = refreshTokenService.verifyRefreshToken(refreshToken);
-        if(result.isValid()) {
+        if (result.isValid()) {
             Cookie refreshTokenCookie = refreshTokenService.getRotatedRefreshTokenCookie(result.getRefreshToken());
             response.addCookie(refreshTokenCookie);
 
