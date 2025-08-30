@@ -52,20 +52,16 @@ public class CertificateService implements ICertificateService {
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
 
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
-
         BigInteger serial = generateSerialNumber();
         KeyPair keyPair = rsaGenerator.generateKeyPair();
-
         X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair);
-        String pemFile = pemConverter.convertToPEM(cert);
         LocalDate from = LocalDateTime.parse(selfSignSubjectDataDTO.validFrom()).toLocalDate();
-        LocalDate to   = LocalDateTime.parse(selfSignSubjectDataDTO.validTo()).toLocalDate();
-
+        LocalDate to = LocalDateTime.parse(selfSignSubjectDataDTO.validTo()).toLocalDate();
 
         Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
                 serial.toString(),
-                pemFile,
+                pemConverter.convertToPEM(cert),
                 from,
                 to,
                 null,
@@ -75,6 +71,49 @@ public class CertificateService implements ICertificateService {
         );
         persistCertificate(selfSignSubjectDataDTO.o(), keyPair, cert, certificate);
         return new CertificateSelfSignResponseDTO(certificate.getId());
+    }
+
+
+    @Transactional
+    @Override
+    public CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl userAuth, CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
+        CertificateType certificateType = declareCertificateType(userAuth);
+        Certificate caCertificate = repository.findById(dto.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
+
+        X500Name subjectName = x500NameService.createX500Name(dto);
+        Subject subject = new Subject(subjectName);
+
+        BigInteger serialNumber = generateSerialNumber();
+
+        LocalDate today = LocalDate.now();
+        LocalDate withDays = today.plusDays(dto.validityDays());
+        if (withDays.isAfter(caCertificate.getValidTo()))
+            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+
+        KeyPair keyPair = rsaGenerator.generateKeyPair();
+
+        PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
+
+        String pemFile = pemConverter.convertToPEM(cert);
+
+        User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        Certificate certificate = certificateFactory.createCertificate(
+                certificateType,
+                cert.getSerialNumber().toString(),
+                pemFile,
+                today,
+                withDays,
+                caCertificate,
+                caCertificate.getIssuer()
+                , subject,
+                user);
+
+        persistCertificate(dto.o(), keyPair, cert, certificate);
+        return new CertificateCaSignResponseDTO(certificate.getId());
+
     }
 
     @Override
@@ -104,52 +143,12 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl userAuth, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
-        CertificateType certificateType = declareCertificateType(userAuth);
-        Certificate caCertificate = repository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
-
-        Issuer issuer = caCertificate.getIssuer();
-        X500Name subjectName = x500NameService.createX500Name(data);
-        Subject subject = new Subject(subjectName);
-
-        String issuersOrganization = issuer.getOrganization();
-
-        BigInteger serialNumber = generateSerialNumber();
-
-        LocalDate today = LocalDate.now();
-        LocalDate withDays = today.plusDays(data.validityDays());
-
-        KeyPair keyPair = rsaGenerator.generateKeyPair();
-
-        String parentSerialNumber = caCertificate.getSerialNumber();
-        String parentKeystorePassword = passwordStorage.loadKeyStorePassword(issuersOrganization, parentSerialNumber);
-        String parentPrivateKeyPassword = passwordStorage.loadPrivateKeyPassword(issuersOrganization, parentSerialNumber);
-        PrivateKey parentPrivateKey = keyStoreService.readPrivateKey(parentSerialNumber, parentKeystorePassword, parentSerialNumber, parentPrivateKeyPassword);
-
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-        String pemFile = pemConverter.convertToPEM(cert);
-
-
-        if (withDays.isAfter(caCertificate.getValidTo()))
-            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
-
-        User user = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
-
-        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
-        Certificate certificate = certificateFactory.createCertificate(certificateType, cert.getSerialNumber().toString(), pemFile, today, withDays, caCertificate, issuer, subject, user);
-
-        persistCertificate(data.o(), keyPair, cert, certificate);
-        return new CertificateCaSignResponseDTO(certificate.getId());
-
-    }
-
-    @Override
     public CertificateDownloadResponseDTO downloadCertificateUser(UUID id) {
         Certificate certificate = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Certificate not found"));
 
-        String pem = certificate.getPemFile();
+        String pemContent = certificate.getPemFile();
+        byte[] pemBytes = pemContent.getBytes(StandardCharsets.UTF_8);
 
-        byte[] pemBytes = pem.getBytes(StandardCharsets.UTF_8);
         String fileName = "certificate-" + certificate.getSerialNumber() + ".pem";
         return new CertificateDownloadResponseDTO(pemBytes, fileName);
     }
@@ -168,7 +167,7 @@ public class CertificateService implements ICertificateService {
         passwordStorage.storeKeyStorePassword(organization, keyStorePassword, certificate.getSerialNumber());
 
         keyStoreService.loadKeyStore(null, keyStorePassword.toCharArray());
-        keyStoreService.write(certificate.getSerialNumber(), keyPair.getPrivate(),pkPassword.toCharArray(), cert);
+        keyStoreService.write(certificate.getSerialNumber(), keyPair.getPrivate(), pkPassword.toCharArray(), cert);
         keyStoreService.saveKeyStore(certificate.getSerialNumber(), keyStorePassword.toCharArray());
 
         repository.save(certificate);
@@ -179,5 +178,13 @@ public class CertificateService implements ICertificateService {
         return BigInteger.valueOf(System.currentTimeMillis());
     }
 
+    private PrivateKey loadParentPrivateKey(Certificate certificate) throws InvalidNameException {
+        String issuersOrganization = certificate.getIssuer().getOrganization();
+        String parentSerialNumber = certificate.getSerialNumber();
+        String parentKeystorePassword = passwordStorage.loadKeyStorePassword(issuersOrganization, parentSerialNumber);
+        String parentPrivateKeyPassword = passwordStorage.loadPrivateKeyPassword(issuersOrganization, parentSerialNumber);
+        return keyStoreService.readPrivateKey(parentSerialNumber, parentKeystorePassword, parentSerialNumber, parentPrivateKeyPassword);
+
+    }
 
 }
