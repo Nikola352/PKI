@@ -1,7 +1,8 @@
-package com.team20.pki.certificates.service;
+package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.Subject;
+import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -30,18 +31,15 @@ public class CertificateGenerator {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public X509Certificate generateCertificate(Subject subject, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber) {
+    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber) {
         JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption").setProvider("BC");
 
-        SecretKey temporary = null;
-        try {
-            temporary = generateAESKey();
 
-            PrivateKey decryptedPrivateKey = decryptPrivateKey(parent.getPrivateKey().getKey(), temporary);
-            ContentSigner contentSigner = builder.build(decryptedPrivateKey);
+        try {
+            ContentSigner contentSigner = builder.build(parentPrivateKey);
 
             X500Name issuerName = parent.getIssuer().toX500Name();
-            X500Name subjectName = parent.getSubject().toX500Name();
+            X500Name subjectName = subject.toX500Name();
 
             BigInteger serial = new BigInteger(serialNumber);
 
@@ -61,8 +59,6 @@ public class CertificateGenerator {
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter().setProvider("BC");
 
             return converter.getCertificate(certificateHolder);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
         } catch (OperatorCreationException e) {
             throw new RuntimeException(e);
         } catch (CertificateException e) {
@@ -73,12 +69,11 @@ public class CertificateGenerator {
 
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber) {
+    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair) {
 
         try {
-            KeyPair keyPair = generateKeyPair();
             X500Name issuer = new X500Name("CN=Root Certificate");
-            X500Name subject = issuer; // Self-signed, so subject and issuer are the same
+            X500Name subject = issuer;
 
             Date notBefore = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // yesterday
             Date notAfter = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000); // 1 year from now

@@ -1,12 +1,14 @@
 package com.team20.pki.certificates.model;
 
 
+import com.team20.pki.common.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,10 +33,10 @@ public class Certificate {
     private String pemFile;
 
     @Column(nullable = false)
-    private LocalDateTime validFrom;
+    private LocalDate validFrom;
 
     @Column(nullable = false)
-    private LocalDateTime validTo;
+    private LocalDate validTo;
 
     @ManyToOne(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     private Certificate parent;
@@ -46,6 +48,6 @@ public class Certificate {
     @AttributeOverride(name = "distinguishedName", column = @Column(name = "subject_dn", nullable = false))
     private Subject subject;
 
-    @OneToOne(cascade = {CascadeType.REFRESH})
-    private StoredPrivateKey privateKey;
+    @ManyToOne
+    private User owner;
 }
