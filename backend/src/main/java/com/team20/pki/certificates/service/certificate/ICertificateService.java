@@ -2,7 +2,6 @@ package com.team20.pki.certificates.service.certificate;
 
 import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -22,8 +21,8 @@ public interface ICertificateService {
 
     CertificateGetResponseDTO getCertificateById(UUID id);
 
-    List<CAResponseDTO> getCertificateAuthorities();
+    List<CAResponseDTO> getCertificateAuthorities(UUID subjectId);
 
     CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl user, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
-    CertificateDownloadResponseDTO downloadCertificateUser(UUID id);
+    CertificateDownloadResponseDTO downloadCertificateForUser(UUID id);
 }

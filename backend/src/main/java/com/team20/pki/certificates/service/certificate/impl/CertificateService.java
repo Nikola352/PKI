@@ -51,12 +51,17 @@ public class CertificateService implements ICertificateService {
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
 
+        User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(()-> new EntityNotFoundException("User not found"));
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
+
         BigInteger serial = generateSerialNumber();
         KeyPair keyPair = rsaGenerator.generateKeyPair();
         X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair);
         LocalDate from = LocalDateTime.parse(selfSignSubjectDataDTO.validFrom()).toLocalDate();
         LocalDate to = LocalDateTime.parse(selfSignSubjectDataDTO.validTo()).toLocalDate();
+
+        if (from.isAfter(to))
+            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
 
         Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
@@ -67,7 +72,7 @@ public class CertificateService implements ICertificateService {
                 null,
                 new Issuer(name),
                 new Subject(name),
-                null
+                user
         );
         persistCertificate(selfSignSubjectDataDTO.o(), keyPair, cert, certificate);
         return new CertificateSelfSignResponseDTO(certificate.getId());
@@ -123,8 +128,16 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public List<CAResponseDTO> getCertificateAuthorities() {
+    public List<CAResponseDTO> getCertificateAuthorities(UUID subjectId) {
+        User subject = userRepository.findById(subjectId).orElseThrow(() -> new EntityNotFoundException("Subject not found"));
         List<Certificate> CAs = repository.findCertificatesByTypeIn(List.of(CertificateType.ROOT, CertificateType.INTERMEDIATE));
+        CAs = CAs.stream().filter(certificate -> {
+            try {
+                return certificate.getSubject().getOrganization().equalsIgnoreCase(subject.getOrganization());
+            } catch (InvalidNameException e) {
+                throw new EntityNotFoundException("Subject not found");
+            }
+        }).toList();
         return CAs.stream().map(certificate -> {
             Subject sub = certificate.getSubject();
             X500Name name = sub.toX500Name();
@@ -143,7 +156,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public CertificateDownloadResponseDTO downloadCertificateUser(UUID id) {
+    public CertificateDownloadResponseDTO downloadCertificateForUser(UUID id) {
         Certificate certificate = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Certificate not found"));
 
         String pemContent = certificate.getPemFile();
