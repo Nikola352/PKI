@@ -15,8 +15,8 @@ public class CertificateFactory implements ICertificateFactory {
 
     public Certificate createCertificate(
             CertificateType type, String serial, String pemFile, LocalDate from, LocalDate to,
-            Certificate issuerCert, Issuer issuer, Subject subject, KeyStoreInfo ksInfo, User owner
+            Certificate issuerCert, Issuer issuer, Subject subject, User owner
     ) {
-        return new Certificate(null, type, serial, pemFile, from, to, issuerCert, issuer, subject, ksInfo, owner);
+        return new Certificate(null, type, serial, pemFile, from, to, issuerCert, issuer, subject, owner);
     }
 }

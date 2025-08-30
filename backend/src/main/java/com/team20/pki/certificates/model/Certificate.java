@@ -48,9 +48,6 @@ public class Certificate {
     @AttributeOverride(name = "distinguishedName", column = @Column(name = "subject_dn", nullable = false))
     private Subject subject;
 
-    @Embedded
-    private KeyStoreInfo keyStoreInfo;
-
     @ManyToOne
     private User owner;
 }

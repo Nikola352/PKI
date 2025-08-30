@@ -1,5 +1,6 @@
 package com.team20.pki.certificates.service.certificate.util;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -8,24 +9,28 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 
 @Component
-public class KeyStoreService{
+public class KeyStoreService {
     private KeyStore keyStore;
-    private final String filePath = "src/main/resources/key-store/";
+    @Value("${cert-keystore.path}")
+    private String certificateFilePath;
 
     public KeyStoreService() throws KeyStoreException, NoSuchProviderException {
+
         keyStore = KeyStore.getInstance("JKS", "SUN");
     }
+
     public void write(String alias, PrivateKey privateKey, char[] password, java.security.cert.Certificate certificate) {
         try {
-            keyStore.setKeyEntry(alias, privateKey, password, new Certificate[] {certificate});
+            keyStore.setKeyEntry(alias, privateKey, password, new Certificate[]{certificate});
         } catch (KeyStoreException e) {
             e.printStackTrace();
         }
     }
+
     public void loadKeyStore(String fileName, char[] password) {
         try {
             if (fileName != null) {
-                keyStore.load(new FileInputStream(filePath + fileName + ".jks"), password);
+                keyStore.load(new FileInputStream(certificateFilePath + "/" + fileName + ".jks"), password);
             } else {
                 keyStore.load(null, password);
             }
@@ -41,7 +46,7 @@ public class KeyStoreService{
     }
 
     public void saveKeyStore(String fileName, char[] password) throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException {
-        keyStore.store(new FileOutputStream(filePath + fileName + ".jks"), password);
+        keyStore.store(new FileOutputStream(certificateFilePath + "/" + fileName + ".jks"), password);
     }
 
     public Certificate readCertificate(String keyStoreFile, char[] password, String alias) {
@@ -58,7 +63,7 @@ public class KeyStoreService{
             //kreiramo instancu KeyStore
             KeyStore ks = KeyStore.getInstance("JKS", "SUN");
             //ucitavamo podatke
-            BufferedInputStream in = new BufferedInputStream(new FileInputStream(filePath + keyStoreFile + ".jks"));
+            BufferedInputStream in = new BufferedInputStream(new FileInputStream(certificateFilePath + "/" + keyStoreFile + ".jks"));
             ks.load(in, keyStorePass.toCharArray());
 
             if (ks.isKeyEntry(alias)) {

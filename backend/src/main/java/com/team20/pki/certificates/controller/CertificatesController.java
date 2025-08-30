@@ -11,7 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.naming.InvalidNameException;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -25,13 +31,13 @@ public class CertificatesController {
     private final ICertificateService certificateService;
 
     @PostMapping("/self-signed")
-    ResponseEntity<CertificateSelfSignResponseDTO> generateSelfSigned(@RequestBody SelfSignSubjectDataDTO data) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
+    ResponseEntity<CertificateSelfSignResponseDTO> generateSelfSigned(@RequestBody SelfSignSubjectDataDTO data) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         CertificateSelfSignResponseDTO response = certificateService.generateSelfSignedCertificate(data);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/ca-issued")
-    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@AuthenticationPrincipal UserDetailsImpl user, @RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException {
+    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@AuthenticationPrincipal UserDetailsImpl user, @RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
         CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(user,data);
         return ResponseEntity.ok(response);
     }
