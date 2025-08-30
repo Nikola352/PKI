@@ -75,11 +75,11 @@ const createCertificateRequest = async (
   return response.data;
 };
 
-const fetchCertificateAuthorities = async (): Promise<
-  CertificateAuthority[]
-> => {
+const fetchCertificateAuthorities = async (
+  userId: string
+): Promise<CertificateAuthority[]> => {
   const response = await api.get<CertificateAuthority[]>(
-    `${VITE_API_BASE_URL}/api/certificates/get-cas`
+    `${VITE_API_BASE_URL}/api/certificates/get-cas/${userId}`
   );
 
   return response.data.map((r) => ({
@@ -92,6 +92,7 @@ const fetchCertificateAuthorities = async (): Promise<
 };
 
 export const RequestCACertificate: React.FC = () => {
+  const navigate = useNavigate();
   const { caId } = useParams();
   const [selectedCA, setSelectedCA] = useState<CertificateAuthority | null>(
     null
@@ -131,10 +132,14 @@ export const RequestCACertificate: React.FC = () => {
 
   // Fetch available CAs
   const { data: certificateAuthorities, isLoading: loadingCAs } = useQuery({
-    queryKey: ["certificate-authorities"],
-    queryFn: fetchCertificateAuthorities,
+    queryKey: ["certificate-authorities", caId],
+    queryFn: () => fetchCertificateAuthorities(caId ?? ""),
+    enabled: Boolean(caId),
   });
-
+  useEffect(() => {
+    if (certificateAuthorities && certificateAuthorities.length === 0)
+      navigate("/issue-self-signed/" + caId);
+  }, [certificateAuthorities, navigate]);
   // Update form when CA is selected
   useEffect(() => {
     console.log(caUser);
@@ -370,7 +375,6 @@ export const RequestCACertificate: React.FC = () => {
       console.error("Error submitting certificate request:", error);
     },
   });
-  const navigate = useNavigate();
   const handleCAChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const caId = e.target.value;
     const ca = certificateAuthorities?.find((ca) => ca.id === caId) || null;

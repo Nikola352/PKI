@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import * as yup from "yup";
 import api from "@/api/axios-config";
+import { useParams } from "react-router";
 
 const { VITE_API_BASE_URL } = import.meta.env;
-
+interface CAUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  organization: string;
+}
 interface CertificateFormData {
+  subjectId: string;
   cn: string; // Common Name (required)
   o: string; // Organization
   ou: string; // Organizational Unit
@@ -111,9 +119,18 @@ const getOneYearFromNow = (): string => {
   const minutes = String(oneYear.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
-
+interface CAUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  organization: string;
+}
 export const IssueSelfSigned: React.FC = () => {
+  const { caId } = useParams();
+  const [caUser, setCaUser] = useState<CAUser | null>(null);
   const [formData, setFormData] = useState<CertificateFormData>({
+    subjectId: caId ?? "",
     cn: "",
     o: "",
     ou: "",
@@ -133,6 +150,18 @@ export const IssueSelfSigned: React.FC = () => {
     validTo: getOneYearFromNow(),
   });
 
+  useEffect(() => {
+    if (!caId) return;
+    api.get<CAUser>(`${VITE_API_BASE_URL}/api/ca-users/${caId}`).then((res) => {
+      setCaUser(res.data);
+      // Update the organization field with the CA user's organization
+      setFormData((prev) => ({
+        ...prev,
+        o: res.data.organization,
+      }));
+    });
+  }, [caId]);
+
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
 
   const createCertificateMutation = useMutation({
@@ -140,8 +169,9 @@ export const IssueSelfSigned: React.FC = () => {
     onSuccess: (data) => {
       console.log("Certificate created successfully:", data);
       setFormData({
+        subjectId: caId ?? "",
         cn: "",
-        o: "",
+        o: caUser?.organization || "", // Keep the organization value from caUser
         ou: "",
         c: "",
         st: "",
@@ -167,6 +197,12 @@ export const IssueSelfSigned: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
+
+    // Prevent changes to the organization field
+    if (name === "o") {
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -224,6 +260,11 @@ export const IssueSelfSigned: React.FC = () => {
     `w-full px-4 py-2 bg-slate-700 border ${
       validationErrors[fieldName] ? "border-red-500" : "border-slate-600"
     } rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`;
+
+  const disabledInputClasses = (fieldName: string): string =>
+    `w-full px-4 py-2 bg-slate-800 border ${
+      validationErrors[fieldName] ? "border-red-500" : "border-slate-600"
+    } rounded-lg text-slate-400 placeholder-slate-500 cursor-not-allowed opacity-75`;
 
   const labelClasses: string = "block text-sm font-medium text-slate-300 mb-2";
   const errorClasses: string = "text-red-400 text-sm mt-1";
@@ -330,6 +371,9 @@ export const IssueSelfSigned: React.FC = () => {
                 <div>
                   <label htmlFor="o" className={labelClasses}>
                     Organization (O)
+                    <span className="text-slate-400 text-xs ml-2">
+                      (Locked to CA Organization)
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -337,8 +381,10 @@ export const IssueSelfSigned: React.FC = () => {
                     name="o"
                     value={formData.o}
                     onChange={handleInputChange}
-                    placeholder="e.g., Acme Corporation"
-                    className={inputClasses("o")}
+                    placeholder="Loading organization..."
+                    className={disabledInputClasses("o")}
+                    disabled
+                    readOnly
                   />
                   {validationErrors.o && (
                     <p className={errorClasses}>{validationErrors.o}</p>

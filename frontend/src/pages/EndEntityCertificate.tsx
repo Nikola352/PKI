@@ -31,9 +31,9 @@ const certificateApi = {
   post: async (data: any) => {
     return api.post(`${VITE_API_BASE_URL}/api/certificates/ca-issued`, data);
   },
-  get: async () => {
+  get: async (userId: string) => {
     const response = await api.get<CertificateAuthority[]>(
-      `${VITE_API_BASE_URL}/api/certificates/get-cas`
+      `${VITE_API_BASE_URL}/api/certificates/get-cas/${userId}`
     );
     return response.data.map((r) => ({
       ...r,
@@ -119,7 +119,7 @@ export const EndEntityCertificateForm: React.FC = () => {
   // Fetch available CAs
   const { data: certificateAuthorities, isLoading: loadingCAs } = useQuery({
     queryKey: ["certificate-authorities"],
-    queryFn: () => certificateApi.get(),
+    queryFn: () => certificateApi.get(userContext?.currentUser?.id ?? ""),
   });
 
   // Update form when CA is selected
