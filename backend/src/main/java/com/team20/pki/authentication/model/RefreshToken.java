@@ -15,7 +15,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "refresh_tokens")
+@Table(
+        name = "refresh_tokens",
+        indexes = {
+                @Index(name = "idx_refresh_token_token", columnList = "token", unique = true),
+                @Index(name = "idx_refresh_token_session", columnList = "sessionId"),
+                @Index(name = "idx_refresh_token_exp_revoked", columnList = "expirationTime, revoked")
+        }
+)
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
