@@ -12,6 +12,9 @@ import { IssueSelfSigned } from "./pages/IssueSelfSigned";
 import { RequestCACertificate } from "./pages/RequestCertificate";
 import CAManagementPage from "./pages/CAManagementPage";
 import { EndEntityCertificateForm } from "./pages/EndEntityCertificate";
+import Invite from "./pages/Invite";
+import ActivateCaAccount from "./pages/ActivateCaAccount";
+
 function App() {
   const client = new QueryClient();
 
@@ -22,24 +25,26 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/user/activate" element={<ActivateAccount />} />
+          <Route path="/user/activate/ca" element={<ActivateCaAccount />} />
 
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
-            <Route element={<RequireAuth role="ADMINISTRATOR" />}>
-              <Route path="/view-ca-users" element={<CAManagementPage />} />
-              <Route
-                path="/issue-self-signed/:caId"
-                element={<IssueSelfSigned />}
-              />
-              <Route path="/issue/:caId" element={<RequestCACertificate />} />
-            </Route>
-            <Route element={<RequireAuth role="REGULAR_USER" />}>
-              <Route
-                path="/end-entity"
-                element={<EndEntityCertificateForm />}
-              />
-            </Route>
           </Route>
+
+          <Route element={<RequireAuth role="REGULAR_USER" />}>
+            <Route path="/end-entity" element={<EndEntityCertificateForm />} />
+          </Route>
+
+          <Route element={<RequireAuth role="ADMINISTRATOR" />}>
+            <Route path="/view-ca-users" element={<CAManagementPage />} />
+            <Route
+              path="/issue-self-signed/:caId"
+              element={<IssueSelfSigned />}
+            />
+            <Route path="/issue/:caId" element={<RequestCACertificate />} />
+            <Route path="/invite" element={<Invite />} />
+          </Route>
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </UserProvider>

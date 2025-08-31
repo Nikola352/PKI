@@ -1,18 +1,18 @@
 package com.team20.pki.authentication.service;
 
-import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.authentication.dto.*;
-import com.team20.pki.config.properties.AuthConfigProperties;
-import com.team20.pki.encryption.service.CryptoHashService;
-import com.team20.pki.email.service.EmailService;
+import com.team20.pki.authentication.exception.UnauthenticatedError;
+import com.team20.pki.authentication.mapper.RegisterRequestMapper;
+import com.team20.pki.authentication.model.RegisterRequest;
+import com.team20.pki.authentication.model.UserDetailsImpl;
+import com.team20.pki.authentication.repository.RegisterRequestRepository;
 import com.team20.pki.common.exception.InvalidRequestError;
 import com.team20.pki.common.exception.NotFoundError;
-import com.team20.pki.authentication.exception.UnauthenticatedError;
-import com.team20.pki.common.mapper.UserMapper;
-import com.team20.pki.authentication.model.RegisterRequest;
 import com.team20.pki.common.model.User;
-import com.team20.pki.authentication.repository.RegisterRequestRepository;
 import com.team20.pki.common.repository.UserRepository;
+import com.team20.pki.config.properties.AuthConfigProperties;
+import com.team20.pki.email.service.EmailService;
+import com.team20.pki.encryption.service.CryptoHashService;
 import com.team20.pki.util.SecureRandomGenerator;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
@@ -44,7 +44,7 @@ public class AuthService {
     private final CryptoHashService cryptoHashService;
     private final RegisterRequestRepository registerRequestRepository;
     private final EmailService emailService;
-    private final UserMapper userMapper;
+    private final RegisterRequestMapper registerRequestMapper;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
@@ -58,7 +58,7 @@ public class AuthService {
     }
 
     public RegisterResponseDto register(@Valid RegisterRequestDto registerRequestDto) {
-        if(userRepository.existsByEmail(registerRequestDto.getEmail())) {
+        if (userRepository.existsByEmail(registerRequestDto.getEmail())) {
             throw new InvalidRequestError("User with this email already exists");
         }
 
@@ -72,6 +72,7 @@ public class AuthService {
                 .firstName(registerRequestDto.getFirstName())
                 .lastName(registerRequestDto.getLastName())
                 .organization(registerRequestDto.getOrganization())
+                .role(User.Role.REGULAR_USER)
                 .build();
 
         emailService.sendAccountActivationEmail(request, verificationCode);
@@ -81,12 +82,36 @@ public class AuthService {
         return new RegisterResponseDto(request.getEmail(), request.getFullName());
     }
 
-    public void activateAccount(@Valid VerificationCodeRequestDto verificationCodeDto) {
-        String codeHash = cryptoHashService.hash(verificationCodeDto.getVerificationCode());
+    public RegisterResponseDto inviteCaUser(@Valid InviteRequestDto dto) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new InvalidRequestError("User with this email already exists");
+        }
+
+        String verificationCode = SecureRandomGenerator.generateCode(VERIFICATION_CODE_LENGTH);
+
+        RegisterRequest request = RegisterRequest.builder()
+                .verificationCode(cryptoHashService.hash(verificationCode))
+                .expirationTime(Instant.now().plus(activationDuration))
+                .email(dto.getEmail())
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .organization(dto.getOrganization())
+                .role(User.Role.CA_USER)
+                .build();
+
+        emailService.sendInvitationEmail(request, verificationCode);
+
+        registerRequestRepository.save(request);
+
+        return new RegisterResponseDto(request.getEmail(), request.getFullName());
+    }
+
+    private RegisterRequest getValidRequestOrThrow(String verificationCode) {
+        String codeHash = cryptoHashService.hash(verificationCode);
         RegisterRequest request = registerRequestRepository.findByVerificationCode(codeHash)
                 .orElseThrow(() -> new NotFoundError("Activation link invalid or expired"));
 
-        if(userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new InvalidRequestError("User with this email already exists");
         }
 
@@ -95,9 +120,38 @@ public class AuthService {
             throw new NotFoundError("Activation link invalid or expired");
         }
 
-        User user = userMapper.toUser(request);
+        return request;
+    }
+
+    public void activateAccount(@Valid VerificationCodeRequestDto verificationCodeDto) {
+        RegisterRequest request = getValidRequestOrThrow(verificationCodeDto.getVerificationCode());
+
+        if (request.getRole() != User.Role.REGULAR_USER) {
+            throw new NotFoundError("Activation link invalid or expired");
+        }
+
+        User user = registerRequestMapper.toUser(request);
         userRepository.save(user);
         registerRequestRepository.delete(request);
+    }
+
+    public void activateAccount(@Valid CaVerificationRequestDto dto) {
+        RegisterRequest request = getValidRequestOrThrow(dto.getVerificationCode());
+
+        if (request.getRole() != User.Role.CA_USER) {
+            throw new NotFoundError("Activation link invalid or expired");
+        }
+
+        User user = registerRequestMapper.toUser(request);
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+
+        userRepository.save(user);
+        registerRequestRepository.delete(request);
+    }
+
+    public VerificationCheckResponseDto getPendingVerificationSubject(@Valid VerificationCodeRequestDto codeDto) {
+        RegisterRequest request = getValidRequestOrThrow(codeDto.getVerificationCode());
+        return registerRequestMapper.toCheckDto(request);
     }
 
     @Scheduled(fixedRate = REGISTRATION_REQUEST_CLEANUP_PERIOD_MILLIS)
