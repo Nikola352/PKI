@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class CertificatesController {
     private final ICertificateService certificateService;
 
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/self-signed")
     ResponseEntity<CertificateSelfSignResponseDTO> generateSelfSigned(@RequestBody SelfSignSubjectDataDTO data) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         CertificateSelfSignResponseDTO response = certificateService.generateSelfSignedCertificate(data);
@@ -40,6 +42,7 @@ public class CertificatesController {
         CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(user,data);
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     ResponseEntity<CertificateGetResponseDTO> getCertificate(@PathVariable("id") UUID id) {
