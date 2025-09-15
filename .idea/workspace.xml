@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="f3980110-ccbd-47f5-a531-44f58ae2f428" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/backend/.gitattributes" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitattributes" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/PkiApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/PkiApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/ServletInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/ServletInitializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/CaVerificationRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/CaVerificationRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/InviteRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/InviteRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginResultDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/LoginResultDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RefreshTokenVerificationResult.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RefreshTokenVerificationResult.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RegisterRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RegisterRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RegisterResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/RegisterResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/TokenRefreshResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/TokenRefreshResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/VerificationCheckResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/VerificationCheckResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/VerificationCodeRequestDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/dto/VerificationCodeRequestDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/UnauthenticatedError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/UnauthenticatedError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/handler/CustomAccessDeniedHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/handler/CustomAccessDeniedHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/handler/CustomAuthenticationEntryPoint.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/exception/handler/CustomAuthenticationEntryPoint.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/filter/JwtAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/filter/JwtAuthenticationFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/mapper/RegisterRequestMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/mapper/RegisterRequestMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/RefreshToken.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/RefreshToken.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/RegisterRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/RegisterRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/UserDetailsImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/model/UserDetailsImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/repository/RefreshTokenRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/repository/RefreshTokenRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/repository/RegisterRequestRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/repository/RegisterRequestRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/AuthService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/AuthService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/JwtService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/JwtService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/RefreshTokenService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/RefreshTokenService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/UserDetailsServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/authentication/service/UserDetailsServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/controller/CAUserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/controller/CAUserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/dto/CAUserGetAllResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/dto/CAUserGetAllResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/dto/CAUserGetResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/dto/CAUserGetResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/service/ICAUserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/service/ICAUserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/service/impl/CAUserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/caUsers/service/impl/CAUserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/controller/CertificatesController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/controller/CertificatesController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CAResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CAResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CaSignSubjectDataDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CaSignSubjectDataDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateCaSignResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateCaSignResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateDownloadResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateDownloadResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateGetResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateGetResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateSelfSignResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/CertificateSelfSignResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/SelfSignSubjectDataDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/dto/SelfSignSubjectDataDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Certificate.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Certificate.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/CertificateType.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/CertificateType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Issuer.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Issuer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Subject.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/model/Subject.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/repository/ICertificateRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/repository/ICertificateRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/PrivateKeyEncryptionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/PrivateKeyEncryptionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/ICertificateFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/ICertificateFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/ICertificateService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/ICertificateService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/IRSAGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/IRSAGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/Ix500NameService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/Ix500NameService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/CertificateFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/CertificateFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/CertificateService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/CertificateService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/RSAGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/RSAGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/X500NameService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/impl/X500NameService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/CertificateGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/CertificateGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/CertificateToPEMConverter.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/CertificateToPEMConverter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/KeyStorePasswordGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/KeyStorePasswordGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/KeyStoreService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/KeyStoreService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/PasswordStorage.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/certificates/service/certificate/util/PasswordStorage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/dto/ErrorResponseDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/dto/ErrorResponseDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/InvalidRequestError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/InvalidRequestError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/NotFoundError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/NotFoundError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/ServerError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/ServerError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/UnauthorizedError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/UnauthorizedError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/handler/CustomExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/handler/CustomExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/handler/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/exception/handler/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/common/repository/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/JavaMailSenderConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/JavaMailSenderConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/ThymeleafConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/ThymeleafConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/WebSecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/WebSecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/properties/AuthConfigProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/properties/AuthConfigProperties.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/properties/EmailConfigProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/config/properties/EmailConfigProperties.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/ActivationEmailBodyDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/ActivationEmailBodyDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/EmailDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/EmailDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/InvitationEmailBodyDto.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/dto/InvitationEmailBodyDto.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/exception/EmailSendFailedException.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/exception/EmailSendFailedException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailGeneratorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailGeneratorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailSenderService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailSenderService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/EmailService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/TemplateProcessorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/TemplateProcessorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/infra/JavaMailSenderService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/infra/JavaMailSenderService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/infra/ThymeleafTemplateProcessorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/email/service/infra/ThymeleafTemplateProcessorService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/exception/EncryptionError.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/exception/EncryptionError.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/mapper/OrganizationKeyMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/mapper/OrganizationKeyMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/model/OrganizationKey.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/model/OrganizationKey.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/model/WrappedKey.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/model/WrappedKey.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/repository/OrganizationKeyRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/repository/OrganizationKeyRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/CryptoHashService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/CryptoHashService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/EncryptionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/EncryptionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/MasterKeyProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/MasterKeyProvider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/OrganizationKeyProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/OrganizationKeyProvider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/DbOrganizationKeyProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/DbOrganizationKeyProvider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/DefaultEncryptionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/DefaultEncryptionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/EnvMasterKeyProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/EnvMasterKeyProvider.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/HmacCryptoHashService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/encryption/service/impl/HmacCryptoHashService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/util/SecureRandomGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/util/SecureRandomGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/util/ValidationPatterns.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/team20/pki/util/ValidationPatterns.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/email-templates/activate.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/email-templates/activate.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/email-templates/invite.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/email-templates/invite.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/test/java/com/team20/pki/PkiApplicationTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/test/java/com/team20/pki/PkiApplicationTests.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.env.development" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.env.development" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/eslint.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/eslint.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/api/axios-config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/api/axios-config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/RequireAuth.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/RequireAuth.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/context/UserContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/context/UserContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/hooks/usePasswordStrength.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/hooks/usePasswordStrength.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/main.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/model/error.response.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/model/error.response.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/model/user.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/model/user.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/ActivateAccount.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/ActivateAccount.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/ActivateCaAccount.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/ActivateCaAccount.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/CAManagementPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/CAManagementPage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/CaIssue.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/CaIssue.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/EndEntityCertificate.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/EndEntityCertificate.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Home.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Invite.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Invite.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/IssueSelfSigned.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/IssueSelfSigned.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/NotFound.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/NotFound.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Register.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/RequestCertificate.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/RequestCertificate.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/vite-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/vite-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tailwind.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.app.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tsconfig.app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.node.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/tsconfig.node.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/vite.config.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 1
+}]]></component>
+  <component name="ProjectId" id="32jFndU5vJltLXDWE9zLdotbV2v" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feature/csr-request",
+    "last_opened_file_path": "/home/nikolavelemir/EXTERNAL/PKI/backend"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.25557.131" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f3980110-ccbd-47f5-a531-44f58ae2f428" name="Changes" comment="" />
+      <created>1757926242835</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757926242835</updated>
+    </task>
+    <servers />
+  </component>
+</project>

@@ -14,6 +14,7 @@ import CAManagementPage from "./pages/CAManagementPage";
 import { EndEntityCertificateForm } from "./pages/EndEntityCertificate";
 import Invite from "./pages/Invite";
 import ActivateCaAccount from "./pages/ActivateCaAccount";
+import CAIssuing from "./pages/CaIssuing";
 
 function App() {
   const client = new QueryClient();
@@ -30,7 +31,9 @@ function App() {
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Home />} />
           </Route>
-
+          <Route element={<RequireAuth role="CA_USER" />}>
+            <Route path="/issue-certificate" element={<CAIssuing />} />
+          </Route>
           <Route element={<RequireAuth role="REGULAR_USER" />}>
             <Route path="/end-entity" element={<EndEntityCertificateForm />} />
           </Route>
