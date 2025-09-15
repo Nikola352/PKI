@@ -11,23 +11,39 @@ import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Base64;
+import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCSException;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.naming.InvalidNameException;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -122,6 +138,66 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
+    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
+        CertificateType certificateType = declareCertificateType(user);
+        Certificate caCertificate = repository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
+        String pemFile = new String(csr.getBytes());
+
+        PKCS10CertificationRequest csrCertificate = null;
+        boolean isValid = false;
+        try (PEMParser pemParser = new PEMParser(new StringReader(new String(pemFile.getBytes())))) {
+            csrCertificate = (PKCS10CertificationRequest) pemParser.readObject();
+
+            isValid = csrCertificate.isSignatureValid(
+                    new JcaContentVerifierProviderBuilder().setProvider("BC").build(csrCertificate.getSubjectPublicKeyInfo())
+            );
+
+        } catch (OperatorCreationException | PKCSException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (!isValid)
+            throw new IllegalArgumentException("Corrupted or invalid certificate file");
+
+
+        X500Name subjectName = csrCertificate.getSubject();
+        Subject subject = new Subject(subjectName);
+        BigInteger serialNumber = generateSerialNumber();
+
+        LocalDate today = LocalDate.now();
+        LocalDate withDays = today.plusDays(data.validityDays());
+        if (withDays.isAfter(caCertificate.getValidTo()))
+            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+
+
+        PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
+
+        String pemFileCert = pemConverter.convertToPEM(cert);
+
+        User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+        PublicKey publicKey = converter.getPublicKey(pkInfo);
+
+        Certificate certificate = certificateFactory.createCertificate(
+                certificateType,
+                cert.getSerialNumber().toString(),
+                pemFileCert,
+                today,
+                withDays,
+                caCertificate,
+                caCertificate.getIssuer()
+                , subject,
+                subjectUser);
+
+        persistCertificateExternal(subjectUser.getOrganization(), publicKey, cert, certificate);
+        return new CertificateCaSignResponseDTO(certificate.getId());
+    }
+
+    @Override
     public CertificateGetResponseDTO getCertificateById(UUID id) {
         Certificate pemContent = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Not Found"));
         return new CertificateGetResponseDTO(pemContent.getPemFile());
@@ -181,6 +257,18 @@ public class CertificateService implements ICertificateService {
 
         keyStoreService.loadKeyStore(null, keyStorePassword.toCharArray());
         keyStoreService.write(certificate.getSerialNumber(), keyPair.getPrivate(), pkPassword.toCharArray(), cert);
+        keyStoreService.saveKeyStore(certificate.getSerialNumber(), keyStorePassword.toCharArray());
+
+        repository.save(certificate);
+
+    }
+
+    private void persistCertificateExternal(String organization, PublicKey publicKey, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+
+        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
+
+        passwordStorage.storeKeyStorePassword(organization, keyStorePassword, certificate.getSerialNumber());
+        keyStoreService.loadKeyStore(null, keyStorePassword.toCharArray());
         keyStoreService.saveKeyStore(certificate.getSerialNumber(), keyStorePassword.toCharArray());
 
         repository.save(certificate);

@@ -246,12 +246,18 @@ export const EndEntityCertificateForm: React.FC = () => {
   });
 
   const createExternalCertificateRequestMutation = useMutation({
-    mutationFn: async (data: ExternalCertificateRequestData) => {
+    mutationFn: async (data: FormData) => {
       console.log("submit", data);
       // TODO submit request here
+      console.log(data);
       const response = await api.post(
-        `${VITE_API_BASE_URL}/api/certificates/ca-issued`,
-        data
+        `${VITE_API_BASE_URL}/api/certificates/ca-external-issued`,
+        data,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       return response.data;
     },
@@ -279,12 +285,12 @@ export const EndEntityCertificateForm: React.FC = () => {
     if (!valid) {
       return;
     }
-    const requestData: ExternalCertificateRequestData = {
-      caId: formData.caId,
-      subjectId: formData.subjectId,
-      validityDays: formData.validityDays,
-      csr: uploadedFile!,
-    };
+    const requestData = new FormData();
+    requestData.append("caId", formData.caId);
+    requestData.append("subjectId", formData.subjectId);
+    requestData.append("validityDays", formData.validityDays.toString());
+    requestData.append("csr", uploadedFile!);
+
     createExternalCertificateRequestMutation.mutate(requestData);
   };
 
