@@ -32,7 +32,15 @@ const certificateApi = {
   post: async (data: any) => {
     return api.post(`${VITE_API_BASE_URL}/api/certificates/ca-issued`, data);
   },
-  get: async (userId: string) => {
+  getUser: async (userId: string) => {
+    return api.get<{
+      id: number;
+      name: string;
+      email: string;
+      organization: string;
+    }>(`/api/users/${userId}`);
+  },
+  getCAs: async (userId: string) => {
     const response = await api.get<CertificateAuthority[]>(
       `${VITE_API_BASE_URL}/api/certificates/get-cas/${userId}`
     );
@@ -132,7 +140,15 @@ export const EndEntityCertificateForm: React.FC = () => {
   // Fetch available CAs
   const { data: certificateAuthorities, isLoading: loadingCAs } = useQuery({
     queryKey: ["certificate-authorities"],
-    queryFn: () => certificateApi.get(userContext?.currentUser?.id ?? ""),
+    queryFn: () => certificateApi.getCAs(userContext?.currentUser?.id ?? ""),
+  });
+  useEffect(() => {
+    certificateApi.getUser(userContext?.currentUser?.id ?? "").then((res) => {
+      setFormData((prev) => ({
+        ...prev,
+        o: res.data.organization,
+      }));
+    });
   });
 
   // Update form when CA is selected
@@ -614,36 +630,32 @@ export const EndEntityCertificateForm: React.FC = () => {
                               {validationErrors.cn}
                             </p>
                           )}
+                          <input
+                            disabled
+                            type="text"
+                            id="o"
+                            name="o"
+                            value={formData.o}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Your Company Name"
+                            className={inputClasses("o")}
+                            required={isFieldRequired("o")}
+                          />
+                          {validationErrors.o && (
+                            <p className={errorClasses}>{validationErrors.o}</p>
+                          )}
                         </div>
                       )}
 
-                      {/* Email */}
-                      {isFieldVisible("emailAddress") && (
+                      {/* Department */}
+                      {isFieldVisible("ou") && (
                         <div>
-                          <label
-                            htmlFor="emailAddress"
-                            className={labelClasses}
-                          >
-                            Email Address{" "}
-                            {isFieldRequired("emailAddress") && (
+                          <label htmlFor="ou" className={labelClasses}>
+                            Department{" "}
+                            {isFieldRequired("ou") && (
                               <span className="text-red-500">*</span>
                             )}
                           </label>
-                          <input
-                            type="email"
-                            id="emailAddress"
-                            name="emailAddress"
-                            value={formData.emailAddress}
-                            onChange={handleInputChange}
-                            placeholder="e.g., john.smith@company.com"
-                            className={inputClasses("emailAddress")}
-                            required={isFieldRequired("emailAddress")}
-                          />
-                          {validationErrors.emailAddress && (
-                            <p className={errorClasses}>
-                              {validationErrors.emailAddress}
-                            </p>
-                          )}
                         </div>
                       )}
 

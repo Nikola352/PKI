@@ -43,10 +43,6 @@ public class CAUserService implements ICAUserService {
         }).toList();
     }
 
-    public CAUserGetResponse getCaUserForCertificateIssue(UUID id) {
-        User user = userRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-        return new CAUserGetResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getOrganization());
-    }
 
     private CAUserGetAllResponse.Certificate createUserCertificateResponse(Certificate certificate) {
         return new CAUserGetAllResponse.Certificate(

@@ -9,5 +9,4 @@ import java.util.UUID;
 public interface ICAUserService {
     List<CAUserGetAllResponse> getAllCaUsersWithCertificates();
 
-    CAUserGetResponse getCaUserForCertificateIssue(UUID id);
 }
