@@ -107,7 +107,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export const EndEntityCertificateForm: React.FC = () => {
+export const CSRRequestForm: React.FC = () => {
   const userContext = useContext(UserContext);
   const [isExternal, setIsExternal] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -630,36 +630,32 @@ export const EndEntityCertificateForm: React.FC = () => {
                               {validationErrors.cn}
                             </p>
                           )}
+                          <input
+                            disabled
+                            type="text"
+                            id="o"
+                            name="o"
+                            value={formData.o}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Your Company Name"
+                            className={inputClasses("o")}
+                            required={isFieldRequired("o")}
+                          />
+                          {validationErrors.o && (
+                            <p className={errorClasses}>{validationErrors.o}</p>
+                          )}
                         </div>
                       )}
 
-                      {/* Email */}
-                      {isFieldVisible("emailAddress") && (
+                      {/* Department */}
+                      {isFieldVisible("ou") && (
                         <div>
-                          <label
-                            htmlFor="emailAddress"
-                            className={labelClasses}
-                          >
-                            Email Address{" "}
-                            {isFieldRequired("emailAddress") && (
+                          <label htmlFor="ou" className={labelClasses}>
+                            Department{" "}
+                            {isFieldRequired("ou") && (
                               <span className="text-red-500">*</span>
                             )}
                           </label>
-                          <input
-                            type="email"
-                            id="emailAddress"
-                            name="emailAddress"
-                            value={formData.emailAddress}
-                            onChange={handleInputChange}
-                            placeholder="e.g., john.smith@company.com"
-                            className={inputClasses("emailAddress")}
-                            required={isFieldRequired("emailAddress")}
-                          />
-                          {validationErrors.emailAddress && (
-                            <p className={errorClasses}>
-                              {validationErrors.emailAddress}
-                            </p>
-                          )}
                         </div>
                       )}
 
@@ -673,7 +669,6 @@ export const EndEntityCertificateForm: React.FC = () => {
                             )}
                           </label>
                           <input
-                            disabled
                             type="text"
                             id="o"
                             name="o"

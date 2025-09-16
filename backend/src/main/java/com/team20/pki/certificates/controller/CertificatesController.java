@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,7 +68,7 @@ public class CertificatesController {
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadcertficate(@PathVariable("id") UUID id) {
+    public ResponseEntity<byte[]> downloadCertficate(@PathVariable("id") UUID id) {
         CertificateDownloadResponseDTO downloadResponse = certificateService.downloadCertificateForUser(id);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResponse.fileName() + "\"")
                 .contentType(MediaType.valueOf("application/x-pem-file"))
