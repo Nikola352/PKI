@@ -12,7 +12,6 @@ import {
   Calendar,
   Building,
   Mail,
-  Phone,
 } from "lucide-react";
 
 import api from "@/api/axios-config";
