@@ -34,6 +34,7 @@ function App() {
           <Route element={<RequireAuth role="CA_USER" />}>
             <Route path="/issue-certificate" element={<CAIssuing />} />
           </Route>
+
           <Route element={<RequireAuth role="REGULAR_USER" />}>
             <Route path="/end-entity" element={<EndEntityCertificateForm />} />
           </Route>

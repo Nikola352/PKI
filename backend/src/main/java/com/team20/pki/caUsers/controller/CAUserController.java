@@ -21,14 +21,14 @@ public class CAUserController {
 
     private final ICAUserService caUserService;
 
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    //@PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
     ResponseEntity<Collection<CAUserGetAllResponse>> getAllCaUsers() {
         return ResponseEntity.ok(caUserService.getAllCaUsersWithCertificates());
     }
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
-    @GetMapping(value = "/{id}")
-    ResponseEntity<CAUserGetResponse> getCaUserForCertificateIssue(@PathVariable UUID id) {
-        return ResponseEntity.ok(caUserService.getCaUserForCertificateIssue(id));
-    }
+   // @PreAuthorize("hasRole('ADMINISTRATOR')")
+//    @GetMapping(value = "/{id}")
+//    ResponseEntity<CAUserGetResponse> getCaUserForCertificateIssue(@PathVariable UUID id) {
+//        return ResponseEntity.ok(caUserService.getCaUserForCertificateIssue(id));
+//    }
 }

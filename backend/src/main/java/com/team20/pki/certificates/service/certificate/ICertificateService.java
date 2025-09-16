@@ -23,6 +23,11 @@ public interface ICertificateService {
 
     List<CAResponseDTO> getCertificateAuthorities(UUID subjectId);
 
+    CertificateCaSignResponseDTO generateCaSignedCertificateForUser(UserDetailsImpl userAuth, CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
+
     CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl user, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
+
     CertificateDownloadResponseDTO downloadCertificateForUser(UUID id);
+
+    List<CAResponseDTO> getCertificateAuthorities(UserDetailsImpl userDetails);
 }

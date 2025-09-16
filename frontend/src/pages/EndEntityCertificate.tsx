@@ -31,7 +31,15 @@ const certificateApi = {
   post: async (data: any) => {
     return api.post(`${VITE_API_BASE_URL}/api/certificates/ca-issued`, data);
   },
-  get: async (userId: string) => {
+  getUser: async (userId: string) => {
+    return api.get<{
+      id: number;
+      name: string;
+      email: string;
+      organization: string;
+    }>(`/api/users/${userId}`);
+  },
+  getCAs: async (userId: string) => {
     const response = await api.get<CertificateAuthority[]>(
       `${VITE_API_BASE_URL}/api/certificates/get-cas/${userId}`
     );
@@ -119,7 +127,15 @@ export const EndEntityCertificateForm: React.FC = () => {
   // Fetch available CAs
   const { data: certificateAuthorities, isLoading: loadingCAs } = useQuery({
     queryKey: ["certificate-authorities"],
-    queryFn: () => certificateApi.get(userContext?.currentUser?.id ?? ""),
+    queryFn: () => certificateApi.getCAs(userContext?.currentUser?.id ?? ""),
+  });
+  useEffect(() => {
+    certificateApi.getUser(userContext?.currentUser?.id ?? "").then((res) => {
+      setFormData((prev) => ({
+        ...prev,
+        o: res.data.organization,
+      }));
+    });
   });
 
   // Update form when CA is selected
@@ -515,6 +531,7 @@ export const EndEntityCertificateForm: React.FC = () => {
                           )}
                         </label>
                         <input
+                          disabled
                           type="text"
                           id="o"
                           name="o"

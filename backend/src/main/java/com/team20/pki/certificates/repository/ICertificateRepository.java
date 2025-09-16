@@ -24,4 +24,5 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
     @Query("SELECT COUNT(c) FROM Certificate c WHERE c.parent.owner.id = :id")
     int countIssuedCertificatesByParentId(@Param("id") UUID id);
 
+    List<Certificate> findAllByParent_Id(UUID parentId);
 }

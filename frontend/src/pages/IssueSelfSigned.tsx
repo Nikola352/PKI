@@ -152,7 +152,7 @@ export const IssueSelfSigned: React.FC = () => {
 
   useEffect(() => {
     if (!caId) return;
-    api.get<CAUser>(`${VITE_API_BASE_URL}/api/ca-users/${caId}`).then((res) => {
+    api.get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`).then((res) => {
       setCaUser(res.data);
       // Update the organization field with the CA user's organization
       setFormData((prev) => ({
