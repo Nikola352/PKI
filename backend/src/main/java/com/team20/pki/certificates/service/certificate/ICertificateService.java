@@ -30,4 +30,10 @@ public interface ICertificateService {
     CertificateDownloadResponseDTO downloadCertificateForUser(UUID id);
 
     List<CAResponseDTO> getCertificateAuthorities(UserDetailsImpl userDetails);
+
+    List<CertificateResponseDto> getUserCertificates(UUID userId);
+
+    List<CertificateNodeResponseDto> getAllCertificates();
+
+    List<CertificateNodeResponseDto> getCaCertificates(UUID userId);
 }

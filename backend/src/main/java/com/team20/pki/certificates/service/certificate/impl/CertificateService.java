@@ -2,10 +2,16 @@ package com.team20.pki.certificates.service.certificate.impl;
 
 import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
-import com.team20.pki.certificates.model.*;
+import com.team20.pki.certificates.mapper.CertificateMapper;
 import com.team20.pki.certificates.model.Certificate;
+import com.team20.pki.certificates.model.CertificateType;
+import com.team20.pki.certificates.model.Issuer;
+import com.team20.pki.certificates.model.Subject;
 import com.team20.pki.certificates.repository.ICertificateRepository;
-import com.team20.pki.certificates.service.certificate.*;
+import com.team20.pki.certificates.service.certificate.ICertificateFactory;
+import com.team20.pki.certificates.service.certificate.ICertificateService;
+import com.team20.pki.certificates.service.certificate.IRSAGenerator;
+import com.team20.pki.certificates.service.certificate.Ix500NameService;
 import com.team20.pki.certificates.service.certificate.util.*;
 import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
@@ -34,7 +40,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +55,7 @@ public class CertificateService implements ICertificateService {
     private final UserRepository userRepository;
     private final ICertificateFactory certificateFactory;
     private final PasswordStorage passwordStorage;
+    private final CertificateMapper certificateMapper;
 
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
@@ -244,6 +250,33 @@ public class CertificateService implements ICertificateService {
 
             return new CAResponseDTO(certificate.getId(), caName, maxValidity, 1, 1);
         }).toList();
+    }
+
+    @Override
+    public List<CertificateResponseDto> getUserCertificates(UUID userId) {
+        return certificateRepository.findByOwnerId(userId).stream().map(certificateMapper::toDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public List<CertificateNodeResponseDto> getAllCertificates() {
+        final List<Certificate> roots = certificateRepository.findByType(CertificateType.ROOT);
+        return roots.stream().map(this::getSubtree).toList();
+    }
+
+    @Override
+    @Transactional
+    public List<CertificateNodeResponseDto> getCaCertificates(UUID userId) {
+        final List<Certificate> roots = certificateRepository.findCaRoots(userId);
+        return roots.stream().map(this::getSubtree).toList();
+    }
+
+    private CertificateNodeResponseDto getSubtree(Certificate certificate) {
+        final List<Certificate> children = certificateRepository.findAllByParent_Id(certificate.getId());
+        return new CertificateNodeResponseDto(
+                certificateMapper.toDto(certificate),
+                children.stream().map(this::getSubtree).toList()
+        );
     }
 
     @Override
