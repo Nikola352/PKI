@@ -38,7 +38,7 @@ public class AuthController {
     }
 
     @PostMapping("/invite")
-    @Secured("ROLE_ADMIN")
+    @Secured("ROLE_ADMINISTRATOR")
     public ResponseEntity<RegisterResponseDto> inviteCaUser(@Valid @RequestBody InviteRequestDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.inviteCaUser(dto));
     }

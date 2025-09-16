@@ -4,6 +4,7 @@ import * as yup from "yup";
 import * as lucideReact from "lucide-react";
 import api from "@/api/axios-config";
 import { UserContext } from "@/context/UserContext";
+import FileUpload from "@/components/FileUpload";
 const { VITE_API_BASE_URL } = import.meta.env;
 
 interface CertificateAuthority {
@@ -81,6 +82,12 @@ interface CertificateAuthority {
   requiredFields: string[];
   optionalFields: string[];
 }
+interface ExternalCertificateRequestData {
+  subjectId: string;
+  caId: string;
+  csr: File;
+  validityDays: number;
+}
 
 interface CertificateRequestData {
   subjectId: string;
@@ -102,6 +109,12 @@ interface FormErrors {
 
 export const EndEntityCertificateForm: React.FC = () => {
   const userContext = useContext(UserContext);
+  const [isExternal, setIsExternal] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const handleToggle = () => {
+    setIsExternal(!isExternal);
+  };
   const [selectedCA, setSelectedCA] = useState<CertificateAuthority | null>(
     null
   );
@@ -146,7 +159,6 @@ export const EndEntityCertificateForm: React.FC = () => {
         caId: selectedCA.id,
         validityDays: selectedCA.defaultValidityDays,
       }));
-
       // Create dynamic validation schema
       const schemaShape: any = {
         caId: yup.string().required("Please select a Certificate Authority"),
@@ -162,7 +174,6 @@ export const EndEntityCertificateForm: React.FC = () => {
             `Maximum validity is ${selectedCA.maxValidityDays} days`
           ),
       };
-
       // Add required field validations
       selectedCA.requiredFields.forEach((field: string) => {
         switch (field) {
@@ -187,7 +198,6 @@ export const EndEntityCertificateForm: React.FC = () => {
             break;
         }
       });
-
       // Add optional field validations
       selectedCA.optionalFields.forEach((field: string) => {
         switch (field) {
@@ -219,7 +229,6 @@ export const EndEntityCertificateForm: React.FC = () => {
             break;
         }
       });
-
       setDynamicSchema(yup.object().shape(schemaShape));
     }
   }, [selectedCA]);
@@ -251,6 +260,49 @@ export const EndEntityCertificateForm: React.FC = () => {
       console.error("Error submitting certificate request:", error);
     },
   });
+
+  const createExternalCertificateRequestMutation = useMutation({
+    mutationFn: async (data: ExternalCertificateRequestData) => {
+      console.log("submit", data);
+      // TODO submit request here
+      const response = await api.post(
+        `${VITE_API_BASE_URL}/api/certificates/ca-issued`,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (data: any) => {
+      console.log(data);
+    },
+  });
+  const validateExternalForm = () => {
+    const errors: FormErrors = {};
+
+    if (!formData.caId) errors.caId = "CA ID is required";
+    if (!formData.subjectId) errors.subjectId = "Subject ID is required";
+    if (!uploadedFile?.name) errors.uploadedFile = "PEM file is required";
+    if (!formData.validityDays || formData.validityDays < 1) {
+      errors.validityDays = "Valid days must be at least 1";
+    }
+    console.log(errors);
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleExternalCSRSubmit = () => {
+    // validate form
+    const valid = validateExternalForm();
+    if (!valid) {
+      return;
+    }
+    const requestData: ExternalCertificateRequestData = {
+      caId: formData.caId,
+      subjectId: formData.subjectId,
+      validityDays: formData.validityDays,
+      csr: uploadedFile!,
+    };
+    createExternalCertificateRequestMutation.mutate(requestData);
+  };
 
   const handleCAChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     const caId = e.target.value;
@@ -316,7 +368,6 @@ export const EndEntityCertificateForm: React.FC = () => {
         return typeof value === "string" ? value.trim() !== "" : value !== 0;
       })
     );
-
     createCertificateRequestMutation.mutate(requestData);
   };
 
@@ -414,120 +465,164 @@ export const EndEntityCertificateForm: React.FC = () => {
                 <p className={errorClasses}>{validationErrors.caId}</p>
               )}
             </div>
-
+            {/* TODO here add toggle to switch between auto generate and extern generation */}
             {selectedCA && (
               <>
-                {/* Certificate Info */}
-                <div className="bg-slate-700 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-start">
-                    <lucideReact.InfoIcon className="text-blue-300 me-2 w-6 h-6" />
-                    <div>
-                      <h3 className="font-medium text-white">
-                        {selectedCA.name}
-                      </h3>
-                      <p className="text-white text-sm mt-1">
-                        {selectedCA.description}
-                      </p>
-                      <p className="text-white text-sm mt-1">
-                        Valid for: {selectedCA.minValidityDays} -{" "}
-                        {selectedCA.maxValidityDays} days
-                      </p>
+                <div className="relative">
+                  <div className="flex items-center justify-center mb-6">
+                    <button
+                      onClick={handleToggle}
+                      className="relative w-80 h-16 bg-slate-100 rounded-xl p-1 transition-all duration-300 ease-in-out hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-100"
+                      aria-label="Toggle generation mode"
+                    >
+                      {/* Background Track */}
+                      <div className="absolute inset-1 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg"></div>
+
+                      {/* Sliding Indicator */}
+                      <div
+                        className={`absolute top-1 w-36 h-14  bg-gradient-to-r ${
+                          isExternal
+                            ? "from-blue-500 to-blue-600 translate-x-40"
+                            : "from-blue-500 to-blue-600 translate-x-1"
+                        } rounded-lg shadow-lg transition-all duration-300 ease-out transform`}
+                      >
+                        {/* Shine Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 rounded-lg"></div>
+                      </div>
+
+                      {/* Text Labels */}
+                      <div className="relative z-10 flex h-full">
+                        <div className="flex-1 flex items-center justify-center">
+                          <span
+                            className={`font-semibold transition-colors duration-300 ${
+                              !isExternal ? "text-white" : "text-slate-600"
+                            }`}
+                          >
+                            Autogenerate
+                          </span>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center">
+                          <span
+                            className={`font-semibold transition-colors duration-300 p-4 ${
+                              isExternal ? "text-white" : "text-slate-600"
+                            }`}
+                          >
+                            External Generation
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="text-center">
+                    <div className="inline-flex items-center space-x-2 px-4 py-2 bg-slate-50 rounded-lg">
+                      <div
+                        className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                          isExternal ? "bg-blue-800" : "bg-blue-500"
+                        }`}
+                      ></div>
+                      <span className="text-sm font-medium text-slate-700">
+                        {isExternal
+                          ? "External Generation Active"
+                          : "Autogeneration Active"}
+                      </span>
                     </div>
                   </div>
                 </div>
-                {/* Validity Period */}
-                <div>
-                  <label htmlFor="validityDays" className={labelClasses}>
-                    Validity Period (Days){" "}
-                    <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="validityDays"
-                    name="validityDays"
-                    value={formData.validityDays}
-                    onChange={handleInputChange}
-                    min={selectedCA.minValidityDays}
-                    max={selectedCA.maxValidityDays}
-                    className={inputClasses("validityDays")}
-                    required
-                  />
-                  <p className="text-slate-400 text-xs mt-1">
-                    Range: {selectedCA.minValidityDays} -{" "}
-                    {selectedCA.maxValidityDays} days
+
+                {/* Description Card */}
+                <div className="mt-8 p-6 bg-slate-50 rounded-xl border-l-4 border-blue-500">
+                  <h3 className="font-semibold text-slate-800 mb-2">
+                    {isExternal ? "External Generation" : "Autogeneration"}
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    {isExternal
+                      ? "Import existing keys or use external key generation tools. Provides full control over the key creation process."
+                      : "Automatically generate secure cryptographic keys using built-in algorithms. Quick and secure for most use cases."}
                   </p>
-                  {validationErrors.validityDays && (
-                    <p className={errorClasses}>
-                      {validationErrors.validityDays}
-                    </p>
-                  )}
                 </div>
-                {/* Basic Information */}
-                <div>
-                  <h2 className="text-lg font-semibold text-white mb-4">
-                    Your Information
-                  </h2>
+              </>
+            )}
 
-                  <div className="space-y-4">
-                    {/* Common Name */}
-                    {isFieldVisible("cn") && (
+            {selectedCA &&
+              (!isExternal ? (
+                <>
+                  {/* Certificate Info */}
+                  <div className="bg-slate-700 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-start">
+                      <lucideReact.InfoIcon className="text-blue-300 me-2 w-6 h-6" />
                       <div>
-                        <label htmlFor="cn" className={labelClasses}>
-                          Full Name{" "}
-                          {isFieldRequired("cn") && (
-                            <span className="text-red-500">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          id="cn"
-                          name="cn"
-                          value={formData.cn}
-                          onChange={handleInputChange}
-                          placeholder="e.g., John Smith"
-                          className={inputClasses("cn")}
-                          required={isFieldRequired("cn")}
-                        />
-                        {validationErrors.cn && (
-                          <p className={errorClasses}>{validationErrors.cn}</p>
-                        )}
+                        <h3 className="font-medium text-white">
+                          {selectedCA.name}
+                        </h3>
+                        <p className="text-white text-sm mt-1">
+                          {selectedCA.description}
+                        </p>
+                        <p className="text-white text-sm mt-1">
+                          Valid for: {selectedCA.minValidityDays} -{" "}
+                          {selectedCA.maxValidityDays} days
+                        </p>
                       </div>
+                    </div>
+                  </div>
+                  {/* Validity Period */}
+                  <div>
+                    <label htmlFor="validityDays" className={labelClasses}>
+                      Validity Period (Days){" "}
+                      <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="validityDays"
+                      name="validityDays"
+                      value={formData.validityDays}
+                      onChange={handleInputChange}
+                      min={selectedCA.minValidityDays}
+                      max={selectedCA.maxValidityDays}
+                      className={inputClasses("validityDays")}
+                      required
+                    />
+                    <p className="text-slate-400 text-xs mt-1">
+                      Range: {selectedCA.minValidityDays} -{" "}
+                      {selectedCA.maxValidityDays} days
+                    </p>
+                    {validationErrors.validityDays && (
+                      <p className={errorClasses}>
+                        {validationErrors.validityDays}
+                      </p>
                     )}
+                  </div>
+                  {/* Basic Information */}
+                  <div>
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                      Your Information
+                    </h2>
 
-                    {/* Email */}
-                    {isFieldVisible("emailAddress") && (
-                      <div>
-                        <label htmlFor="emailAddress" className={labelClasses}>
-                          Email Address{" "}
-                          {isFieldRequired("emailAddress") && (
-                            <span className="text-red-500">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="email"
-                          id="emailAddress"
-                          name="emailAddress"
-                          value={formData.emailAddress}
-                          onChange={handleInputChange}
-                          placeholder="e.g., john.smith@company.com"
-                          className={inputClasses("emailAddress")}
-                          required={isFieldRequired("emailAddress")}
-                        />
-                        {validationErrors.emailAddress && (
-                          <p className={errorClasses}>
-                            {validationErrors.emailAddress}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Organization */}
-                    {isFieldVisible("o") && (
-                      <div>
-                        <label htmlFor="o" className={labelClasses}>
-                          Organization{" "}
-                          {isFieldRequired("o") && (
-                            <span className="text-red-500">*</span>
+                    <div className="space-y-4">
+                      {/* Common Name */}
+                      {isFieldVisible("cn") && (
+                        <div>
+                          <label htmlFor="cn" className={labelClasses}>
+                            Full Name{" "}
+                            {isFieldRequired("cn") && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            id="cn"
+                            name="cn"
+                            value={formData.cn}
+                            onChange={handleInputChange}
+                            placeholder="e.g., John Smith"
+                            className={inputClasses("cn")}
+                            required={isFieldRequired("cn")}
+                          />
+                          {validationErrors.cn && (
+                            <p className={errorClasses}>
+                              {validationErrors.cn}
+                            </p>
                           )}
                         </label>
                         <input
@@ -554,180 +649,279 @@ export const EndEntityCertificateForm: React.FC = () => {
                           Department{" "}
                           {isFieldRequired("ou") && (
                             <span className="text-red-500">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          id="ou"
-                          name="ou"
-                          value={formData.ou}
-                          onChange={handleInputChange}
-                          placeholder="e.g., IT Department"
-                          className={inputClasses("ou")}
-                          required={isFieldRequired("ou")}
-                        />
-                        {validationErrors.ou && (
-                          <p className={errorClasses}>{validationErrors.ou}</p>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                    {/* Job Title */}
-                    {isFieldVisible("title") && (
-                      <div>
-                        <label htmlFor="title" className={labelClasses}>
-                          Job Title{" "}
-                          {isFieldRequired("title") && (
-                            <span className="text-red-500">*</span>
-                          )}
-                        </label>
-                        <input
-                          type="text"
-                          id="title"
-                          name="title"
-                          value={formData.title}
-                          onChange={handleInputChange}
-                          placeholder="e.g., Software Developer"
-                          className={inputClasses("title")}
-                          required={isFieldRequired("title")}
-                        />
-                        {validationErrors.title && (
-                          <p className={errorClasses}>
-                            {validationErrors.title}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Location Fields */}
-                    {(isFieldVisible("c") ||
-                      isFieldVisible("st") ||
-                      isFieldVisible("l")) && (
-                      <div>
-                        <h3 className="text-md font-medium text-gray-800 mb-3">
-                          Location (Optional)
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {isFieldVisible("c") && (
-                            <div>
-                              <label htmlFor="c" className={labelClasses}>
-                                Country Code{" "}
-                                {isFieldRequired("c") && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="text"
-                                id="c"
-                                name="c"
-                                value={formData.c}
-                                onChange={handleInputChange}
-                                placeholder="US"
-                                maxLength={2}
-                                className={inputClasses("c")}
-                                style={{ textTransform: "uppercase" }}
-                                required={isFieldRequired("c")}
-                              />
-                              {validationErrors.c && (
-                                <p className={errorClasses}>
-                                  {validationErrors.c}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {isFieldVisible("st") && (
-                            <div>
-                              <label htmlFor="st" className={labelClasses}>
-                                State/Province{" "}
-                                {isFieldRequired("st") && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="text"
-                                id="st"
-                                name="st"
-                                value={formData.st}
-                                onChange={handleInputChange}
-                                placeholder="California"
-                                className={inputClasses("st")}
-                                required={isFieldRequired("st")}
-                              />
-                              {validationErrors.st && (
-                                <p className={errorClasses}>
-                                  {validationErrors.st}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {isFieldVisible("l") && (
-                            <div>
-                              <label htmlFor="l" className={labelClasses}>
-                                City{" "}
-                                {isFieldRequired("l") && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </label>
-                              <input
-                                type="text"
-                                id="l"
-                                name="l"
-                                value={formData.l}
-                                onChange={handleInputChange}
-                                placeholder="San Francisco"
-                                className={inputClasses("l")}
-                                required={isFieldRequired("l")}
-                              />
-                              {validationErrors.l && (
-                                <p className={errorClasses}>
-                                  {validationErrors.l}
-                                </p>
-                              )}
-                            </div>
+                      {/* Organization */}
+                      {isFieldVisible("o") && (
+                        <div>
+                          <label htmlFor="o" className={labelClasses}>
+                            Organization{" "}
+                            {isFieldRequired("o") && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            id="o"
+                            name="o"
+                            value={formData.o}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Your Company Name"
+                            className={inputClasses("o")}
+                            required={isFieldRequired("o")}
+                          />
+                          {validationErrors.o && (
+                            <p className={errorClasses}>{validationErrors.o}</p>
                           )}
                         </div>
+                      )}
+
+                      {/* Department */}
+                      {isFieldVisible("ou") && (
+                        <div>
+                          <label htmlFor="ou" className={labelClasses}>
+                            Department{" "}
+                            {isFieldRequired("ou") && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            id="ou"
+                            name="ou"
+                            value={formData.ou}
+                            onChange={handleInputChange}
+                            placeholder="e.g., IT Department"
+                            className={inputClasses("ou")}
+                            required={isFieldRequired("ou")}
+                          />
+                          {validationErrors.ou && (
+                            <p className={errorClasses}>
+                              {validationErrors.ou}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Job Title */}
+                      {isFieldVisible("title") && (
+                        <div>
+                          <label htmlFor="title" className={labelClasses}>
+                            Job Title{" "}
+                            {isFieldRequired("title") && (
+                              <span className="text-red-500">*</span>
+                            )}
+                          </label>
+                          <input
+                            type="text"
+                            id="title"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Software Developer"
+                            className={inputClasses("title")}
+                            required={isFieldRequired("title")}
+                          />
+                          {validationErrors.title && (
+                            <p className={errorClasses}>
+                              {validationErrors.title}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Location Fields */}
+                      {(isFieldVisible("c") ||
+                        isFieldVisible("st") ||
+                        isFieldVisible("l")) && (
+                        <div>
+                          <h3 className="text-md font-medium text-gray-800 mb-3">
+                            Location (Optional)
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {isFieldVisible("c") && (
+                              <div>
+                                <label htmlFor="c" className={labelClasses}>
+                                  Country Code{" "}
+                                  {isFieldRequired("c") && (
+                                    <span className="text-red-500">*</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  id="c"
+                                  name="c"
+                                  value={formData.c}
+                                  onChange={handleInputChange}
+                                  placeholder="US"
+                                  maxLength={2}
+                                  className={inputClasses("c")}
+                                  style={{ textTransform: "uppercase" }}
+                                  required={isFieldRequired("c")}
+                                />
+                                {validationErrors.c && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.c}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {isFieldVisible("st") && (
+                              <div>
+                                <label htmlFor="st" className={labelClasses}>
+                                  State/Province{" "}
+                                  {isFieldRequired("st") && (
+                                    <span className="text-red-500">*</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  id="st"
+                                  name="st"
+                                  value={formData.st}
+                                  onChange={handleInputChange}
+                                  placeholder="California"
+                                  className={inputClasses("st")}
+                                  required={isFieldRequired("st")}
+                                />
+                                {validationErrors.st && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.st}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {isFieldVisible("l") && (
+                              <div>
+                                <label htmlFor="l" className={labelClasses}>
+                                  City{" "}
+                                  {isFieldRequired("l") && (
+                                    <span className="text-red-500">*</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  id="l"
+                                  name="l"
+                                  value={formData.l}
+                                  onChange={handleInputChange}
+                                  placeholder="San Francisco"
+                                  className={inputClasses("l")}
+                                  required={isFieldRequired("l")}
+                                />
+                                {validationErrors.l && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.l}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-6">
+                    {submitError && (
+                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-red-700">
+                          Failed to submit certificate request. Please try
+                          again.
+                        </p>
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {/* Submit Button */}
-                <div className="pt-6">
-                  {submitError && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-700">
-                        Failed to submit certificate request. Please try again.
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Generating Certificate...
+                        </div>
+                      ) : (
+                        "Generate My Certificate"
+                      )}
+                    </button>
+
+                    <div className="mt-4 text-center">
+                      <p className="text-gray-500 text-sm">
+                        Your certificate will be generated instantly and
+                        available for download
                       </p>
                     </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Generating Certificate...
-                      </div>
-                    ) : (
-                      "Generate My Certificate"
-                    )}
-                  </button>
-
-                  <div className="mt-4 text-center">
-                    <p className="text-gray-500 text-sm">
-                      Your certificate will be generated instantly and available
-                      for download
-                    </p>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              ) : (
+                <>
+                  <div className="bg-slate-700 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-start">
+                      <lucideReact.InfoIcon className="text-blue-300 me-2 w-6 h-6" />
+                      <div>
+                        <h3 className="font-medium text-white">
+                          {selectedCA.name}
+                        </h3>
+                        <p className="text-white text-sm mt-1">
+                          {selectedCA.description}
+                        </p>
+                        <p className="text-white text-sm mt-1">
+                          Valid for: {selectedCA.minValidityDays} -{" "}
+                          {selectedCA.maxValidityDays} days
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Validity Period */}
+                  <div>
+                    <label htmlFor="validityDays" className={labelClasses}>
+                      Validity Period (Days){" "}
+                      <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="validityDays"
+                      name="validityDays"
+                      value={formData.validityDays}
+                      onChange={handleInputChange}
+                      min={selectedCA.minValidityDays}
+                      max={selectedCA.maxValidityDays}
+                      className={inputClasses("validityDays")}
+                      required
+                    />
+                    <p className="text-slate-400 text-xs mt-1">
+                      Range: {selectedCA.minValidityDays} -{" "}
+                      {selectedCA.maxValidityDays} days
+                    </p>
+                    {validationErrors.validityDays && (
+                      <p className={errorClasses}>
+                        {validationErrors.validityDays}
+                      </p>
+                    )}
+                  </div>
+                  <FileUpload
+                    uploadedFile={uploadedFile}
+                    setUploadedFile={setUploadedFile}
+                    error={validationErrors.uploadedFile ?? ""}
+                    setValidationError={setValidationErrors}
+                  />
+                  {/* FILE UPLOAD, CA SELECTOR, DURATION SELECTOR */}
+                  {/* Action Button */}
+                  <button
+                    className={`w-full mt-6 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:shadow-lg active:scale-95 ${"bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"}`}
+                    onClick={handleExternalCSRSubmit}
+                  >
+                    Generate Keys Now
+                  </button>
+                </>
+              ))}
           </div>
         </div>
       </div>

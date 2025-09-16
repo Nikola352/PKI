@@ -11,9 +11,6 @@ public class CaVerificationRequestDto {
     String verificationCode;
 
     @NotNull(message = "Password is required")
-    @Size.List({
-            @Size(min = 8, message = "Password must be at least 8 characters long"),
-            @Size(max = 128, message = "Maximum password length is 128 characters")
-    })
+    @Size(min = 8, message = "Password must be at least 8 characters long")
     String password;
 }

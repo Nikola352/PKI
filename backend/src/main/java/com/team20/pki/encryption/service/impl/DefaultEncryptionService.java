@@ -24,7 +24,7 @@ public class DefaultEncryptionService implements EncryptionService {
     private final OrganizationKeyProvider organizationKeyProvider;
 
     @Override
-    public byte[] encrypt(byte[] value, String organization) {
+    public byte[] encrypt(byte[] value, String organization) throws EncryptionError {
         SecretKey orgKey = organizationKeyProvider.getOrCreateOrganizationKey(organization);
 
         try {
@@ -47,7 +47,7 @@ public class DefaultEncryptionService implements EncryptionService {
     }
 
     @Override
-    public byte[] decrypt(byte[] encrypted, String organization) {
+    public byte[] decrypt(byte[] encrypted, String organization) throws EncryptionError {
         SecretKey orgKey = organizationKeyProvider.getOrCreateOrganizationKey(organization);
 
         try {
