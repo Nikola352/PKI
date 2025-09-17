@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import * as yup from "yup";
 import api from "@/api/axios-config";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 interface CAUser {
@@ -149,17 +149,25 @@ export const IssueSelfSigned: React.FC = () => {
     validFrom: getCurrentDateTime(),
     validTo: getOneYearFromNow(),
   });
-
+  const navigate = useNavigate();
   useEffect(() => {
     if (!caId) return;
-    api.get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`).then((res) => {
-      setCaUser(res.data);
-      // Update the organization field with the CA user's organization
-      setFormData((prev) => ({
-        ...prev,
-        o: res.data.organization,
-      }));
-    });
+    api
+      .get<{ rootExists: boolean }>(`/api/certificates/check-root/${caId}`)
+      .then((res) => {
+        if (res.data.rootExists) {
+          api
+            .get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`)
+            .then((res) => {
+              setCaUser(res.data);
+              // Update the organization field with the CA user's organization
+              setFormData((prev) => ({
+                ...prev,
+                o: res.data.organization,
+              }));
+            });
+        } else navigate("/view-users");
+      });
   }, [caId]);
 
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});

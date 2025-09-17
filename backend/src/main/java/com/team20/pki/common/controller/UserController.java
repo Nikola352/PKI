@@ -2,6 +2,7 @@ package com.team20.pki.common.controller;
 
 import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.common.dto.UserCertificateIssueResponseDTO;
+import com.team20.pki.common.dto.UserGetAllResponse;
 import com.team20.pki.common.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,11 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserCertificateIssueResponseDTO> getUser(@PathVariable(name = "id") UUID id) {
         return  ResponseEntity.ok(userService.getUser(id));
+    }
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @GetMapping("/regular")
+    public ResponseEntity<List<UserGetAllResponse>> getRegularUsers() {
+        return  ResponseEntity.ok(userService.getAllRegularUsers());
     }
 }
 

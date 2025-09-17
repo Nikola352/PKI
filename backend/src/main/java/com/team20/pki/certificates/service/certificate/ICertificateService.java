@@ -18,17 +18,15 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ICertificateService {
-     CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException ;
+    CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException;
 
-        CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException;
+    CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException;
 
     CertificateGetResponseDTO getCertificateById(UUID id);
 
     List<CAResponseDTO> getCertificateAuthorities(UUID subjectId);
 
-    CertificateCaSignResponseDTO generateCaSignedCertificateForUser(UserDetailsImpl userAuth, CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
-
-    CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl user, CaSignSubjectDataDTO data) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
+    CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
 
     CertificateDownloadResponseDTO downloadCertificateForUser(UUID id);
 
@@ -39,4 +37,6 @@ public interface ICertificateService {
     List<CertificateNodeResponseDto> getAllCertificates();
 
     List<CertificateNodeResponseDto> getCaCertificates(UUID userId);
+
+    RootsExistResponse rootsExistsForUser(UUID id);
 }

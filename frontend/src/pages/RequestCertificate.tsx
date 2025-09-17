@@ -369,7 +369,7 @@ export const RequestCACertificate: React.FC = () => {
       });
       setSelectedCA(null);
       setValidationErrors({});
-      navigate("/view-ca-users");
+      navigate("/view-users");
     },
     onError: (error) => {
       console.error("Error submitting certificate request:", error);

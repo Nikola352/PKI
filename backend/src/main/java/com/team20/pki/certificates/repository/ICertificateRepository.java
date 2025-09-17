@@ -42,4 +42,5 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
     List<Certificate> findCaRoots(@Param("caId") UUID caId);
 
 
+    boolean existsCertificateByOwnerId(UUID ownerId);
 }
