@@ -446,14 +446,7 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="flex space-x-4">
           <Link
-            to="/view-ca-users"
-            className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <Shield className="w-5 h-5" />
-            <span>Manage CA Users</span>
-          </Link>
-          <Link
-            to="/view-regular-users"
+            to="/view-users"
             className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             <Users className="w-5 h-5" />

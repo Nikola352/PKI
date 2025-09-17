@@ -82,12 +82,12 @@ interface CertificateAuthority {
   requiredFields: string[];
   optionalFields: string[];
 }
-interface ExternalCertificateRequestData {
-  subjectId: string;
-  caId: string;
-  csr: File;
-  validityDays: number;
-}
+// interface ExternalCertificateRequestData {
+//   subjectId: string;
+//   caId: string;
+//   csr: File;
+//   validityDays: number;
+// }
 
 interface CertificateRequestData {
   subjectId: string;

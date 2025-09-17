@@ -67,7 +67,7 @@ const apiCalls = {
     return await api.get<CertificateAuthority[]>(`/api/certificates/get-cas`);
   },
   async requestCertificate(data: any) {
-    return api.post(`/api/certificates/issued-by-ca`, data);
+    return api.post(`/api/certificates/ca-issued`, data);
   },
 };
 

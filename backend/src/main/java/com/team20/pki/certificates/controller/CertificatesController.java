@@ -32,22 +32,17 @@ import java.util.UUID;
 public class CertificatesController {
     private final ICertificateService certificateService;
 
-    //  @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/self-signed")
     ResponseEntity<CertificateSelfSignResponseDTO> generateSelfSigned(@RequestBody SelfSignSubjectDataDTO data) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         CertificateSelfSignResponseDTO response = certificateService.generateSelfSignedCertificate(data);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/ca-issued")
-    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@AuthenticationPrincipal UserDetailsImpl user, @RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
-        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(user, data);
-        return ResponseEntity.ok(response);
-    }
 
-    @PostMapping("/issued-by-ca")
-    ResponseEntity<CertificateCaSignResponseDTO> generateIssuedByCa(@AuthenticationPrincipal UserDetailsImpl user, @RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
-        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificateForUser(user, data);
+    @PostMapping("/ca-issued")
+    ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
+        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(data);
         return ResponseEntity.ok(response);
     }
 
@@ -95,9 +90,15 @@ public class CertificatesController {
                 .contentType(MediaType.valueOf("application/x-pem-file"))
                 .body(downloadResponse.certificateBytes());
     }
+    @GetMapping("/check-root/{userId}")
+    public ResponseEntity<RootsExistResponse> rootsExist(@PathVariable("userId") UUID id){
+        return ResponseEntity.ok(certificateService.rootsExistsForUser(id));
+    }
+
+    @PreAuthorize("hasRole('REGULAR_USER')")
     @PostMapping("/ca-external-issued")
     ResponseEntity<CertificateCaSignResponseDTO> generateCaSignedExternal(@AuthenticationPrincipal UserDetailsImpl user, @ModelAttribute CaSignSubjectExternalDataDTO data, @RequestParam("csr") MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
-        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificateExternal(user,data, csr);
+        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificateExternal(user, data, csr);
         return ResponseEntity.ok(response);
     }
 }

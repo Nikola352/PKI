@@ -98,54 +98,12 @@ public class CertificateService implements ICertificateService {
 
     @Transactional
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificateForUser(UserDetailsImpl userAuth, CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
-
+    public CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
         Certificate caCertificate = certificateRepository.findById(dto.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
-
+        User subjectUser = userRepository.findById(dto.subjectId()).orElseThrow(() -> new EntityNotFoundException("Subject user not found!"));
         X500Name subjectName = x500NameService.createX500Name(dto);
         Subject subject = new Subject(subjectName);
-
-        BigInteger serialNumber = generateSerialNumber();
-
-        LocalDate today = LocalDate.now();
-        LocalDate withDays = today.plusDays(dto.validityDays());
-        if (withDays.isAfter(caCertificate.getValidTo()))
-            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
-
-        KeyPair keyPair = rsaGenerator.generateKeyPair();
-
-        PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
-
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-
-        String pemFile = pemConverter.convertToPEM(cert);
-
-        User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
-        CertificateType certificateType = declareCertificateType(user.getRole());
-        Certificate certificate = certificateFactory.createCertificate(
-                certificateType,
-                cert.getSerialNumber().toString(),
-                pemFile,
-                today,
-                withDays,
-                caCertificate,
-                caCertificate.getIssuer()
-                , subject,
-                user);
-
-        persistCertificate(dto.o(), keyPair, cert, certificate);
-        return new CertificateCaSignResponseDTO(certificate.getId());
-
-    }
-
-    @Transactional
-    @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificate(UserDetailsImpl userAuth, CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
-        CertificateType certificateType = declareCertificateType(userAuth.getUserRole());
-        Certificate caCertificate = certificateRepository.findById(dto.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
-
-        X500Name subjectName = x500NameService.createX500Name(dto);
-        Subject subject = new Subject(subjectName);
+        CertificateType certificateType = declareCertificateType(subjectUser.getRole());
 
         BigInteger serialNumber = generateSerialNumber();
 
@@ -278,6 +236,14 @@ public class CertificateService implements ICertificateService {
     public List<CertificateNodeResponseDto> getCaCertificates(UUID userId) {
         final List<Certificate> roots = certificateRepository.findCaRoots(userId);
         return roots.stream().map(this::getSubtree).toList();
+    }
+
+    @Override
+    public RootsExistResponse rootsExistsForUser(UUID id) {
+        User user = userRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("USer not found"));
+        boolean existsRoot = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
+        boolean isRegularUser = user.getRole().equals(User.Role.REGULAR_USER);
+        return new RootsExistResponse(existsRoot, isRegularUser );
     }
 
     private CertificateNodeResponseDto getSubtree(Certificate certificate) {

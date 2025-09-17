@@ -21,7 +21,7 @@ public class CAUserController {
 
     private final ICAUserService caUserService;
 
-    //@PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
     ResponseEntity<Collection<CAUserGetAllResponse>> getAllCaUsers() {
         return ResponseEntity.ok(caUserService.getAllCaUsersWithCertificates());

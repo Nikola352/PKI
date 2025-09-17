@@ -9,12 +9,12 @@ import { Register } from "@/pages/Register";
 import { ActivateAccount } from "@/pages/ActivateAccount";
 import { IssueSelfSigned } from "./pages/IssueSelfSigned";
 import { RequestCACertificate } from "./pages/RequestCertificate";
-import CAManagementPage from "./pages/CAManagementPage";
 import { EndEntityCertificateForm } from "./pages/EndEntityCertificate";
 import Invite from "./pages/Invite";
 import ActivateCaAccount from "./pages/ActivateCaAccount";
 import CAIssuing from "./pages/CaIssuing";
 import Dashboard from "./pages/Dashboard";
+import UserManagementPage from "./pages/ViewUsers";
 
 function App() {
   const client = new QueryClient();
@@ -40,7 +40,8 @@ function App() {
           </Route>
 
           <Route element={<RequireAuth role="ADMINISTRATOR" />}>
-            <Route path="/view-ca-users" element={<CAManagementPage />} />
+            <Route path="/view-users" element={<UserManagementPage />} />
+
             <Route
               path="/issue-self-signed/:caId"
               element={<IssueSelfSigned />}
