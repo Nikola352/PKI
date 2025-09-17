@@ -26,7 +26,13 @@ public class KeyStoreService {
             e.printStackTrace();
         }
     }
-
+    public void write(String alias, java.security.cert.Certificate certificate) {
+        try {
+            keyStore.setCertificateEntry(alias, certificate);
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+    }
     public void loadKeyStore(String fileName, char[] password) {
         try {
             if (fileName != null) {

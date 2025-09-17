@@ -15,14 +15,23 @@ import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCSException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.naming.InvalidNameException;
 import java.io.IOException;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -292,4 +301,90 @@ public class CertificateService implements ICertificateService {
 
     }
 
+    @Override
+    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
+        CertificateType certificateType = declareCertificateType(user.getUserRole());
+        Certificate caCertificate = certificateRepository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
+        String pemFile = new String(csr.getBytes());
+
+        PKCS10CertificationRequest csrCertificate = null;
+        boolean isValid = false;
+        try (PEMParser pemParser = new PEMParser(new StringReader(new String(pemFile.getBytes())))) {
+            csrCertificate = (PKCS10CertificationRequest) pemParser.readObject();
+
+            isValid = csrCertificate.isSignatureValid(
+                    new JcaContentVerifierProviderBuilder().setProvider("BC").build(csrCertificate.getSubjectPublicKeyInfo())
+            );
+
+        } catch (OperatorCreationException | PKCSException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (!isValid)
+            throw new IllegalArgumentException("Corrupted or invalid certificate file");
+
+
+        X500Name subjectName = csrCertificate.getSubject();
+        Subject subject = new Subject(subjectName);
+        BigInteger serialNumber = generateSerialNumber();
+
+        LocalDate today = LocalDate.now();
+        LocalDate withDays = today.plusDays(data.validityDays());
+        if (withDays.isAfter(caCertificate.getValidTo()))
+            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+
+
+        PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
+
+        String pemFileCert = pemConverter.convertToPEM(cert);
+
+        User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+
+        Certificate certificate = certificateFactory.createCertificate(
+                certificateType,
+                cert.getSerialNumber().toString(),
+                pemFileCert,
+                today,
+                withDays,
+                caCertificate,
+                caCertificate.getIssuer()
+                , subject,
+                subjectUser);
+
+        persistCertificateExternal(subjectUser.getOrganization(), cert, certificate);
+        return new CertificateCaSignResponseDTO(certificate.getId());
+    }
+
+    private void persistCertificateExternal(String organization, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+
+        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
+
+        passwordStorage.storeKeyStorePassword(organization, keyStorePassword, certificate.getSerialNumber());
+        keyStoreService.loadKeyStore(null, keyStorePassword.toCharArray());
+        keyStoreService.write(certificate.getSerialNumber(), cert);
+        keyStoreService.saveKeyStore(certificate.getSerialNumber(), keyStorePassword.toCharArray());
+
+        certificateRepository.save(certificate);
+
+    }
+//    private void persistCertificate(String organization, KeyPair keyPair, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+//
+//        String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
+//        String pkPassword = keyStorePasswordGenerator.generatePassword(16);
+//
+//        passwordStorage.storePrivateKeyPassword(organization, pkPassword, certificate.getSerialNumber());
+//        passwordStorage.storeKeyStorePassword(organization, keyStorePassword, certificate.getSerialNumber());
+//
+//        keyStoreService.loadKeyStore(null, keyStorePassword.toCharArray());
+//        keyStoreService.write(certificate.getSerialNumber(), keyPair.getPrivate(), pkPassword.toCharArray(), cert);
+//        keyStoreService.saveKeyStore(certificate.getSerialNumber(), keyStorePassword.toCharArray());
+//
+//        certificateRepository.save(certificate);
+//
+//    }
 }

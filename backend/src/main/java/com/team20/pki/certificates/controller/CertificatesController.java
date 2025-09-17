@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -73,5 +74,10 @@ public class CertificatesController {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResponse.fileName() + "\"")
                 .contentType(MediaType.valueOf("application/x-pem-file"))
                 .body(downloadResponse.certificateBytes());
+    }
+    @PostMapping("/ca-external-issued")
+    ResponseEntity<CertificateCaSignResponseDTO> generateCaSignedExternal(@AuthenticationPrincipal UserDetailsImpl user, @ModelAttribute CaSignSubjectExternalDataDTO data, @RequestParam("csr") MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
+        CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificateExternal(user,data, csr);
+        return ResponseEntity.ok(response);
     }
 }
