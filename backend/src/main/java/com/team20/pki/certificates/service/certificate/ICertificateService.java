@@ -22,13 +22,9 @@ public interface ICertificateService {
 
     CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException;
 
-    CertificateGetResponseDTO getCertificateById(UUID id);
-
     List<CAResponseDTO> getCertificateAuthorities(UUID subjectId);
 
     CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException;
-
-    CertificateDownloadResponseDTO downloadCertificateForUser(UUID id);
 
     List<CAResponseDTO> getCertificateAuthorities(UserDetailsImpl userDetails);
 
