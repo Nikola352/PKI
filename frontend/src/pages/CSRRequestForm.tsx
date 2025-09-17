@@ -54,7 +54,7 @@ const certificateApi = {
   },
   download: async (certId: string) => {
     const response = await api.get(
-      `${VITE_API_BASE_URL}/api/certificates/${certId}/download`,
+      `${VITE_API_BASE_URL}/api/certificates/${certId}/download/pem`,
       {
         responseType: "blob",
       }

@@ -18,11 +18,13 @@ import {
   LogOut,
   Trash2,
   AlertCircle,
+  Download,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import api from "@/api/axios-config";
 import { UserContext, type UserContextType } from "@/context/UserContext";
+import { CertificateDownloadModal } from "@/components/CertificateDownloadModal";
 
 interface UserCertificate {
   id: string;
@@ -44,6 +46,9 @@ const Dashboard: React.FC = () => {
   const { userRole, loggedIn, userDataLoaded, currentUser, logOut } =
     useContext(UserContext) as UserContextType;
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [certificateToDownload, setCertificateToDownload] = useState<
+    string | null
+  >(null);
 
   const { data: userCertificates, isLoading: userCertsLoading } = useQuery({
     queryKey: ["user-certificates", currentUser?.id],
@@ -92,6 +97,41 @@ const Dashboard: React.FC = () => {
       });
     } catch {
       return dateString;
+    }
+  };
+
+  const downloadPem = async (certId: string) => {
+    try {
+      const response = await api.get(
+        `/api/certificates/${certId}/download/pem`,
+        {
+          responseType: "blob",
+        }
+      );
+      const blob = new Blob([response.data], {
+        type: "application/x-pem-file",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `certificate-${certId}.pem`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading PEM certificate:", error);
+    }
+  };
+
+  const handleDownloadCertificate = (
+    certificateId: string,
+    type: "ROOT" | "INTERMEDIATE" | "END_ENTITY"
+  ) => {
+    if (type === "END_ENTITY") {
+      downloadPem(certificateId);
+    } else {
+      setCertificateToDownload(certificateId);
     }
   };
 
@@ -217,16 +257,29 @@ const Dashboard: React.FC = () => {
                       <span className="ml-2 capitalize">{cert.status}</span>
                     </div>
 
-                    {userRole === "ADMINISTRATOR" &&
-                      cert.status === "ACTIVE" && (
-                        <button
-                          onClick={() => handleRevokeCertificate(cert.id)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
-                          title="Revoke Certificate"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      )}
+                    <button
+                      onClick={() =>
+                        handleDownloadCertificate(cert.id, cert.type)
+                      }
+                      className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
+                      title={
+                        cert.type === "END_ENTITY"
+                          ? "Download PEM"
+                          : "Download PKCS12"
+                      }
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
+
+                    {cert.status === "ACTIVE" && (
+                      <button
+                        onClick={() => handleRevokeCertificate(cert.id)}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
+                        title="Revoke Certificate"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -323,13 +376,39 @@ const Dashboard: React.FC = () => {
                           {cert.serialNumber}
                         </p>
                       </div>
-                      <div
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center border ${getStatusColor(
-                          cert.status
-                        )}`}
-                      >
-                        {getStatusIcon(cert.status)}
-                        <span className="ml-2 capitalize">{cert.status}</span>
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center border ${getStatusColor(
+                            cert.status
+                          )}`}
+                        >
+                          {getStatusIcon(cert.status)}
+                          <span className="ml-2 capitalize">{cert.status}</span>
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            handleDownloadCertificate(cert.id, cert.type)
+                          }
+                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
+                          title={
+                            cert.type === "END_ENTITY"
+                              ? "Download PEM"
+                              : "Download PKCS12"
+                          }
+                        >
+                          <Download className="w-5 h-5" />
+                        </button>
+
+                        {cert.status === "ACTIVE" && (
+                          <button
+                            onClick={() => handleRevokeCertificate(cert.id)}
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
+                            title="Revoke Certificate"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -608,6 +687,13 @@ const Dashboard: React.FC = () => {
           />
         ))}
       </div>
+
+      <CertificateDownloadModal
+        isOpen={certificateToDownload != null}
+        onClose={() => setCertificateToDownload(null)}
+        certificateId={certificateToDownload ?? ""}
+        certificateName={`certificate-${certificateToDownload}`}
+      />
     </div>
   );
 };
