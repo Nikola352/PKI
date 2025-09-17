@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import api from "@/api/axios-config";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 interface Certificate {
@@ -139,17 +139,26 @@ const CAManagementPage: React.FC = () => {
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center mb-4">
+          <div className="flex items-start justify-between mb-4">
             <div className="bg-blue-600/20 p-3 rounded-full mr-4">
               <Shield className="w-8 h-8 text-blue-400" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-4xl font-bold text-white">
                 Certificate Authority Management
               </h1>
               <p className="text-slate-400 text-lg">
                 Manage user certificates and CA permissions
               </p>
+            </div>
+            <div>
+              <Link
+                to="/invite"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+              >
+                <User className="w-5 h-5" />
+                <span>Invite New CA User</span>
+              </Link>
             </div>
           </div>
 

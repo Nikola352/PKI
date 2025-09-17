@@ -3,7 +3,6 @@ import "./App.css";
 import { UserProvider } from "@/context/UserContext";
 import { Login } from "@/pages/Login.tsx";
 import RequireAuth from "./components/RequireAuth";
-import { Home } from "./pages/Home";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NotFound } from "@/pages/NotFound";
 import { Register } from "@/pages/Register";
@@ -15,6 +14,7 @@ import { EndEntityCertificateForm } from "./pages/EndEntityCertificate";
 import Invite from "./pages/Invite";
 import ActivateCaAccount from "./pages/ActivateCaAccount";
 import CAIssuing from "./pages/CaIssuing";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   const client = new QueryClient();
@@ -29,7 +29,7 @@ function App() {
           <Route path="/user/activate/ca" element={<ActivateCaAccount />} />
 
           <Route element={<RequireAuth />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Dashboard />} />
           </Route>
           <Route element={<RequireAuth role="CA_USER" />}>
             <Route path="/issue-certificate" element={<CAIssuing />} />

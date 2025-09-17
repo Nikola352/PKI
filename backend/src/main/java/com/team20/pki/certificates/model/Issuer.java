@@ -1,18 +1,20 @@
 package com.team20.pki.certificates.model;
 
+import com.team20.pki.common.exception.ServerError;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.X500Name;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import java.util.Optional;
 
+@Slf4j
 @Getter
 @Setter
 @AllArgsConstructor
@@ -38,4 +40,17 @@ public class Issuer {
         return organization.orElseThrow(EntityNotFoundException::new);
     }
 
+    public String getCommonName() {
+        try {
+            LdapName ldapName = new LdapName(distinguishedName);
+            Optional<String> organization = ldapName.getRdns()
+                    .stream()
+                    .filter(rdn -> "CN".equalsIgnoreCase(rdn.getType()))
+                    .map(rdn -> rdn.getValue().toString()).findFirst();
+            return organization.orElseThrow(EntityNotFoundException::new);
+        } catch (InvalidNameException e) {
+            log.error(e.getMessage());
+            throw new ServerError(500);
+        }
+    }
 }

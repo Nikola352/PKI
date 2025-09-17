@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,6 +55,24 @@ public class CertificatesController {
     ResponseEntity<CertificateGetResponseDTO> getCertificate(@PathVariable("id") UUID id) {
         CertificateGetResponseDTO response = certificateService.getCertificateById(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/user/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or #userId == authentication.principal.userId")
+    ResponseEntity<List<CertificateResponseDto>> getUserCertificates(@PathVariable("id") UUID userId) {
+        return ResponseEntity.ok(certificateService.getUserCertificates(userId));
+    }
+
+    @GetMapping("/tree")
+    @Secured("ROLE_ADMINISTRATOR")
+    ResponseEntity<List<CertificateNodeResponseDto>> getAllCertificates() {
+        return ResponseEntity.ok(certificateService.getAllCertificates());
+    }
+
+    @GetMapping("/tree/ca/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRATOR') or (hasRole('ROLE_CA') and #userId == authentication.principal.userId)")
+    ResponseEntity<List<CertificateNodeResponseDto>> getCaCertificates(@PathVariable("id") UUID userId) {
+        return ResponseEntity.ok(certificateService.getCaCertificates(userId));
     }
 
     @GetMapping("/get-cas/{id}")
