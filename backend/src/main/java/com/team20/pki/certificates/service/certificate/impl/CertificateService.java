@@ -240,7 +240,10 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public RootsExistResponse rootsExistsForUser(UUID id) {
-        return new RootsExistResponse(certificateRepository.existsCertificateByOwnerId(id));
+        User user = userRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("USer not found"));
+        boolean existsRoot = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
+        boolean isRegularUser = user.getRole().equals(User.Role.REGULAR_USER);
+        return new RootsExistResponse(existsRoot, isRegularUser );
     }
 
     private CertificateNodeResponseDto getSubtree(Certificate certificate) {

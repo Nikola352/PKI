@@ -153,9 +153,11 @@ export const IssueSelfSigned: React.FC = () => {
   useEffect(() => {
     if (!caId) return;
     api
-      .get<{ rootExists: boolean }>(`/api/certificates/check-root/${caId}`)
+      .get<{ rootExists: boolean; isRegularUser: boolean }>(
+        `/api/certificates/check-root/${caId}`
+      )
       .then((res) => {
-        if (res.data.rootExists) {
+        if (res.data.rootExists || !res.data.isRegularUser)
           api
             .get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`)
             .then((res) => {
@@ -166,7 +168,7 @@ export const IssueSelfSigned: React.FC = () => {
                 o: res.data.organization,
               }));
             });
-        } else navigate("/view-users");
+        else navigate("/view-users");
       });
   }, [caId]);
 

@@ -43,4 +43,8 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
 
 
     boolean existsCertificateByOwnerId(UUID ownerId);
+
+    @Query("select count(c) > 0 from Certificate c where c.parent is null and c.owner.organization = :organization")
+    boolean existsRootCertificatesForOrganization(String organization);
+
 }
