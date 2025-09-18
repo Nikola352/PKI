@@ -23,7 +23,9 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
 
     List<Certificate> findAllByParent_Id(UUID parentId);
 
-    List<Certificate> findByType(CertificateType type);
+    List<Certificate> findAllByParent_IdAndIsRevokedFalse(UUID parentId);
+
+    List<Certificate> findByTypeAndIsRevokedFalse(CertificateType type);
 
     @Query("""
     SELECT c
@@ -37,7 +39,7 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
               c.type = com.team20.pki.certificates.model.CertificateType.INTERMEDIATE
               AND po.id <> :caId
           )
-      )
+      ) AND c.isRevoked = false
     """)
     List<Certificate> findCaRoots(@Param("caId") UUID caId);
 

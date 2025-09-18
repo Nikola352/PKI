@@ -220,7 +220,7 @@ public class CertificateService implements ICertificateService {
     @Override
     @Transactional
     public List<CertificateNodeResponseDto> getAllCertificates() {
-        final List<Certificate> roots = certificateRepository.findByType(CertificateType.ROOT);
+        final List<Certificate> roots = certificateRepository.findByTypeAndIsRevokedFalse(CertificateType.ROOT);
         return roots.stream().map(this::getSubtree).toList();
     }
 
@@ -240,7 +240,7 @@ public class CertificateService implements ICertificateService {
     }
 
     private CertificateNodeResponseDto getSubtree(Certificate certificate) {
-        final List<Certificate> children = certificateRepository.findAllByParent_Id(certificate.getId());
+        final List<Certificate> children = certificateRepository.findAllByParent_IdAndIsRevokedFalse(certificate.getId());
         return new CertificateNodeResponseDto(
                 certificateMapper.toDto(certificate),
                 children.stream().map(this::getSubtree).toList()

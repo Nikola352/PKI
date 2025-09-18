@@ -1,7 +1,9 @@
 package com.team20.pki.revocation.controller;
 
 
+import com.team20.pki.certificates.dto.CertificateCaSignResponseDTO;
 import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
+import com.team20.pki.revocation.model.CertificateRevocationResponseDTO;
 import com.team20.pki.revocation.service.IRevocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +22,8 @@ public class RevocationController {
     private final IRevocationService revocationService;
 
     @PutMapping("/{certificateId}")
-    ResponseEntity<Boolean> revokeCertificate(@PathVariable("certificateId") UUID certificateId, @Valid @RequestBody RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException {
-        Boolean response = revocationService.revokeCertificate(certificateId, revokeCertificateRequestDTO);
+    ResponseEntity<CertificateRevocationResponseDTO> revokeCertificate(@PathVariable("certificateId") UUID certificateId, @Valid @RequestBody RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException {
+        CertificateRevocationResponseDTO response = revocationService.revokeCertificate(certificateId, revokeCertificateRequestDTO);
         return ResponseEntity.ok(response);
     }
 }

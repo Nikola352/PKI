@@ -6,9 +6,9 @@ import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
 import com.team20.pki.revocation.model.CertificateRevocationList;
 import com.team20.pki.revocation.repository.CertificateRevocationListRepository;
 import lombok.RequiredArgsConstructor;
+import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.ExtensionsGenerator;
 import org.bouncycastle.cert.X509v2CRLBuilder;
 import org.bouncycastle.cert.jcajce.*;
 
@@ -49,6 +49,12 @@ public class CertificateRevocationListService {
 
         crlGen.addExtension(Extension.authorityKeyIdentifier, false,
                 extUtils.createAuthorityKeyIdentifier(x509Cert));
+
+        // adding crl distribution point
+        String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + x509Cert.getSerialNumber();
+        GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
+        CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
+                new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
 
 
         ContentSigner signer = new JcaContentSignerBuilder(x509Cert.getSigAlgName())
