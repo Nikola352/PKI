@@ -2,6 +2,7 @@ package com.team20.pki.certificates.controller;
 
 import com.team20.pki.authentication.model.UserDetailsImpl;
 import com.team20.pki.certificates.dto.*;
+import com.team20.pki.certificates.service.certificate.ICertificateDownloadService;
 import com.team20.pki.certificates.service.certificate.ICertificateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -31,6 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CertificatesController {
     private final ICertificateService certificateService;
+    private final ICertificateDownloadService certificateDownloadService;
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/self-signed")
@@ -43,12 +45,6 @@ public class CertificatesController {
     @PostMapping("/ca-issued")
     ResponseEntity<CertificateCaSignResponseDTO> generateCaSigned(@RequestBody CaSignSubjectDataDTO data) throws CertificateException, NoSuchAlgorithmException, IOException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
         CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificate(data);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/{id}")
-    ResponseEntity<CertificateGetResponseDTO> getCertificate(@PathVariable("id") UUID id) {
-        CertificateGetResponseDTO response = certificateService.getCertificateById(id);
         return ResponseEntity.ok(response);
     }
 
@@ -83,19 +79,35 @@ public class CertificatesController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadCertficate(@PathVariable("id") UUID id) {
-        CertificateDownloadResponseDTO downloadResponse = certificateService.downloadCertificateForUser(id);
+    @GetMapping("/{id}/download/request")
+    @PreAuthorize("@certificatePermissionEvaluator.canDownloadKeyPair(authentication, #id)")
+    public ResponseEntity<CertificateDownloadRequestResponseDto> requestCertificateDownload(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(certificateDownloadService.requestCertificateDownload(id));
+    }
+
+    @GetMapping("/{id}/download/{requestId}")
+    @PreAuthorize("@certificatePermissionEvaluator.canDownloadKeyPair(authentication, #certificateId)")
+    public ResponseEntity<byte[]> downloadCertificate(@PathVariable("id") UUID certificateId, @PathVariable UUID requestId) {
+        CertificateDownloadResponseDTO downloadResponse = certificateDownloadService.downloadCertificate(certificateId, requestId);
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResponse.fileName() + "\"")
+                .contentType(MediaType.valueOf("application/x-pkcs12"))
+                .body(downloadResponse.certificateBytes());
+    }
+
+    @GetMapping("/{id}/download/pem")
+    public ResponseEntity<byte[]> downloadCertificatePem(@PathVariable("id") UUID id) {
+        CertificateDownloadResponseDTO downloadResponse = certificateDownloadService.downloadCertificatePem(id);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResponse.fileName() + "\"")
                 .contentType(MediaType.valueOf("application/x-pem-file"))
                 .body(downloadResponse.certificateBytes());
     }
+    
     @GetMapping("/check-root/{userId}")
     public ResponseEntity<RootsExistResponse> rootsExist(@PathVariable("userId") UUID id){
         return ResponseEntity.ok(certificateService.rootsExistsForUser(id));
     }
 
-    @PreAuthorize("hasRole('REGULAR_USER')")
+    @Secured("ROLE_USER")
     @PostMapping("/ca-external-issued")
     ResponseEntity<CertificateCaSignResponseDTO> generateCaSignedExternal(@AuthenticationPrincipal UserDetailsImpl user, @ModelAttribute CaSignSubjectExternalDataDTO data, @RequestParam("csr") MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
         CertificateCaSignResponseDTO response = certificateService.generateCaSignedCertificateExternal(user, data, csr);

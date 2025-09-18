@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -28,9 +27,6 @@ public class Certificate {
 
     @Column(unique = true, nullable = false)
     private String serialNumber;
-
-    @Lob
-    private String pemFile;
 
     @Column(nullable = false)
     private LocalDate validFrom;

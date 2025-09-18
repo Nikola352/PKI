@@ -1,6 +1,9 @@
 package com.team20.pki.certificates.service.certificate.impl;
 
-import com.team20.pki.certificates.model.*;
+import com.team20.pki.certificates.model.Certificate;
+import com.team20.pki.certificates.model.CertificateType;
+import com.team20.pki.certificates.model.Issuer;
+import com.team20.pki.certificates.model.Subject;
 import com.team20.pki.certificates.service.certificate.ICertificateFactory;
 import com.team20.pki.common.model.User;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +17,9 @@ public class CertificateFactory implements ICertificateFactory {
 
 
     public Certificate createCertificate(
-            CertificateType type, String serial, String pemFile, LocalDate from, LocalDate to,
+            CertificateType type, String serial, LocalDate from, LocalDate to,
             Certificate issuerCert, Issuer issuer, Subject subject, User owner
     ) {
-        return new Certificate(null, type, serial, pemFile, from, to, issuerCert, issuer, subject, owner);
+        return new Certificate(null, type, serial, from, to, issuerCert, issuer, subject, owner);
     }
 }

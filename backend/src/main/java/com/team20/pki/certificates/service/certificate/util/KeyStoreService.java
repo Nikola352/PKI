@@ -7,6 +7,7 @@ import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 @Component
 public class KeyStoreService {
@@ -55,10 +56,10 @@ public class KeyStoreService {
         keyStore.store(new FileOutputStream(certificateFilePath + "/" + fileName + ".jks"), password);
     }
 
-    public Certificate readCertificate(String keyStoreFile, char[] password, String alias) {
-        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(keyStoreFile))) {
+    public X509Certificate readCertificate(String keyStoreFile, char[] password, String alias) {
+        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(certificateFilePath + "/" + keyStoreFile + ".jks"))) {
             keyStore.load(in, password);
-            return keyStore.getCertificate(alias);
+            return (X509Certificate) keyStore.getCertificate(alias);
         } catch (Exception e) {
             throw new RuntimeException("Failed to read certificate", e);
         }

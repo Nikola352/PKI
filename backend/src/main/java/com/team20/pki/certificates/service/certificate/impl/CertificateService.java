@@ -12,11 +12,15 @@ import com.team20.pki.certificates.service.certificate.ICertificateFactory;
 import com.team20.pki.certificates.service.certificate.ICertificateService;
 import com.team20.pki.certificates.service.certificate.IRSAGenerator;
 import com.team20.pki.certificates.service.certificate.Ix500NameService;
-import com.team20.pki.certificates.service.certificate.util.*;
+import com.team20.pki.certificates.service.certificate.util.CertificateGenerator;
+import com.team20.pki.certificates.service.certificate.util.KeyStorePasswordGenerator;
+import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
+import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
 import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -32,15 +36,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.naming.InvalidNameException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.KeyPair;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
@@ -51,12 +54,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CertificateService implements ICertificateService {
     private final ICertificateRepository certificateRepository;
     private final CertificateGenerator generator;
-    private final CertificateToPEMConverter pemConverter;
     private final Ix500NameService x500NameService;
     private final IRSAGenerator rsaGenerator;
     private final KeyStoreService keyStoreService;
@@ -67,7 +70,7 @@ public class CertificateService implements ICertificateService {
     private final CertificateMapper certificateMapper;
 
     @Transactional
-    public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+    public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
 
         User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new EntityNotFoundException("User not found"));
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
@@ -84,7 +87,6 @@ public class CertificateService implements ICertificateService {
         Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
                 serial.toString(),
-                pemConverter.convertToPEM(cert),
                 from,
                 to,
                 null,
@@ -98,7 +100,7 @@ public class CertificateService implements ICertificateService {
 
     @Transactional
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, InvalidNameException {
+    public CertificateCaSignResponseDTO generateCaSignedCertificate(CaSignSubjectDataDTO dto) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
         Certificate caCertificate = certificateRepository.findById(dto.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
         User subjectUser = userRepository.findById(dto.subjectId()).orElseThrow(() -> new EntityNotFoundException("Subject user not found!"));
         X500Name subjectName = x500NameService.createX500Name(dto);
@@ -118,14 +120,11 @@ public class CertificateService implements ICertificateService {
 
         X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
 
-        String pemFile = pemConverter.convertToPEM(cert);
-
         User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
 
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
                 cert.getSerialNumber().toString(),
-                pemFile,
                 today,
                 withDays,
                 caCertificate,
@@ -136,12 +135,6 @@ public class CertificateService implements ICertificateService {
         persistCertificate(dto.o(), keyPair, cert, certificate);
         return new CertificateCaSignResponseDTO(certificate.getId());
 
-    }
-
-    @Override
-    public CertificateGetResponseDTO getCertificateById(UUID id) {
-        Certificate pemContent = certificateRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Not Found"));
-        return new CertificateGetResponseDTO(pemContent.getPemFile());
     }
 
     @Override
@@ -254,24 +247,12 @@ public class CertificateService implements ICertificateService {
         );
     }
 
-    @Override
-    public CertificateDownloadResponseDTO downloadCertificateForUser(UUID id) {
-        Certificate certificate = certificateRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Certificate not found"));
-
-        String pemContent = certificate.getPemFile();
-        byte[] pemBytes = pemContent.getBytes(StandardCharsets.UTF_8);
-
-        String fileName = "certificate-" + certificate.getSerialNumber() + ".pem";
-        return new CertificateDownloadResponseDTO(pemBytes, fileName);
-    }
-
-
     private CertificateType declareCertificateType(User.Role role) {
 
         return role.equals(User.Role.REGULAR_USER) ? CertificateType.END_ENTITY : CertificateType.INTERMEDIATE;
     }
 
-    private void persistCertificate(String organization, KeyPair keyPair, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+    private void persistCertificate(String organization, KeyPair keyPair, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
 
         String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
         String pkPassword = keyStorePasswordGenerator.generatePassword(16);
@@ -291,17 +272,16 @@ public class CertificateService implements ICertificateService {
         return BigInteger.valueOf(System.currentTimeMillis());
     }
 
-    private PrivateKey loadParentPrivateKey(Certificate certificate) throws InvalidNameException {
+    private PrivateKey loadParentPrivateKey(Certificate certificate) {
         String issuersOrganization = certificate.getIssuer().getOrganization();
         String parentSerialNumber = certificate.getSerialNumber();
         String parentKeystorePassword = passwordStorage.loadKeyStorePassword(issuersOrganization, parentSerialNumber);
         String parentPrivateKeyPassword = passwordStorage.loadPrivateKeyPassword(issuersOrganization, parentSerialNumber);
         return keyStoreService.readPrivateKey(parentSerialNumber, parentKeystorePassword, parentSerialNumber, parentPrivateKeyPassword);
-
     }
 
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, InvalidNameException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, CertificateException, KeyStoreException, BadPaddingException, InvalidKeyException {
+    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
         CertificateType certificateType = declareCertificateType(user.getUserRole());
         Certificate caCertificate = certificateRepository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
         String pemFile = new String(csr.getBytes());
@@ -337,8 +317,6 @@ public class CertificateService implements ICertificateService {
 
         X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
 
-        String pemFileCert = pemConverter.convertToPEM(cert);
-
         User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
 
         SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
@@ -347,7 +325,6 @@ public class CertificateService implements ICertificateService {
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
                 cert.getSerialNumber().toString(),
-                pemFileCert,
                 today,
                 withDays,
                 caCertificate,
@@ -359,7 +336,7 @@ public class CertificateService implements ICertificateService {
         return new CertificateCaSignResponseDTO(certificate.getId());
     }
 
-    private void persistCertificateExternal(String organization, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+    private void persistCertificateExternal(String organization, X509Certificate cert, Certificate certificate) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
 
         String keyStorePassword = keyStorePasswordGenerator.generatePassword(16);
 

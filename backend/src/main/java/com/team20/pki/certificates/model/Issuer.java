@@ -31,13 +31,18 @@ public class Issuer {
         return new X500Name(distinguishedName);
     }
 
-    public String getOrganization() throws InvalidNameException {
-        LdapName ldapName = new LdapName(distinguishedName);
-        Optional<String> organization = ldapName.getRdns()
-                .stream()
-                .filter(rdn -> "O".equalsIgnoreCase(rdn.getType()))
-                .map(rdn -> rdn.getValue().toString()).findFirst();
-        return organization.orElseThrow(EntityNotFoundException::new);
+    public String getOrganization() {
+        try {
+            LdapName ldapName = new LdapName(distinguishedName);
+            Optional<String> organization = ldapName.getRdns()
+                    .stream()
+                    .filter(rdn -> "O".equalsIgnoreCase(rdn.getType()))
+                    .map(rdn -> rdn.getValue().toString()).findFirst();
+            return organization.orElseThrow(EntityNotFoundException::new);
+        } catch (InvalidNameException e) {
+            log.error(e.getMessage());
+            throw new ServerError(500);
+        }
     }
 
     public String getCommonName() {
