@@ -13,9 +13,9 @@ import java.util.UUID;
 
 @Repository
 public interface ICertificateRepository extends JpaRepository<Certificate, UUID> {
-    List<Certificate> findCertificatesByTypeIn(Collection<CertificateType> types);
+    List<Certificate> findCertificatesByTypeInAndIsRevokedFalse(Collection<CertificateType> types);
 
-    @Query("select c from Certificate c where c.owner.id =:id")
+    @Query("select c from Certificate c where c.owner.id =:id and c.isRevoked = false")
     List<Certificate> findByOwnerId(@Param("id") UUID id);
 
     @Query("SELECT COUNT(c) FROM Certificate c WHERE c.parent.owner.id = :id")

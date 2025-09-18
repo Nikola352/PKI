@@ -20,6 +20,6 @@ public class CertificateFactory implements ICertificateFactory {
             CertificateType type, String serial, LocalDate from, LocalDate to,
             Certificate issuerCert, Issuer issuer, Subject subject, User owner
     ) {
-        return new Certificate(null, type, serial, from, to, issuerCert, issuer, subject, owner);
+        return new Certificate(null, type, serial, from, to, issuerCert, issuer, subject, owner, false);
     }
 }

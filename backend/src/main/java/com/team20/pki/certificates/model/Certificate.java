@@ -46,4 +46,7 @@ public class Certificate {
 
     @ManyToOne
     private User owner;
+
+    @Column(nullable = false)
+    private Boolean isRevoked;
 }

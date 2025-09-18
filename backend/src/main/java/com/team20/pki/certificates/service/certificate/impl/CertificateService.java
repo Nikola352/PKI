@@ -187,7 +187,7 @@ public class CertificateService implements ICertificateService {
     @Override
     public List<CAResponseDTO> getCertificateAuthorities(UUID subjectId) {
         User subject = userRepository.findById(subjectId).orElseThrow(() -> new EntityNotFoundException("Subject not found"));
-        List<Certificate> CAs = certificateRepository.findCertificatesByTypeIn(List.of(CertificateType.ROOT, CertificateType.INTERMEDIATE));
+        List<Certificate> CAs = certificateRepository.findCertificatesByTypeInAndIsRevokedFalse(List.of(CertificateType.ROOT, CertificateType.INTERMEDIATE));
         CAs = CAs.stream().filter(certificate -> {
             try {
                 return certificate.getSubject().getOrganization().equalsIgnoreCase(subject.getOrganization());
