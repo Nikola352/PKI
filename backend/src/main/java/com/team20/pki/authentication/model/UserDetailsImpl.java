@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-import static com.team20.pki.common.model.User.Role.ADMINISTRATOR;
-import static com.team20.pki.common.model.User.Role.CA_USER;
-
 public class UserDetailsImpl implements UserDetails {
     @Getter
     private final UUID userId;
@@ -51,13 +48,11 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        if(userRole == CA_USER || userRole == ADMINISTRATOR) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_CA"));
-        }
-        if(userRole == ADMINISTRATOR) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATOR"));
-        }
+        authorities.add(new SimpleGrantedAuthority(switch (userRole) {
+            case REGULAR_USER -> "ROLE_USER";
+            case CA_USER -> "ROLE_CA";
+            case ADMINISTRATOR -> "ROLE_ADMINISTRATOR";
+        }));
         return authorities;
     }
 
