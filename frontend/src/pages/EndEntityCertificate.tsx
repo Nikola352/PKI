@@ -114,7 +114,9 @@ export const EndEntityCertificateForm: React.FC = () => {
   const userContext = useContext(UserContext);
   const [isExternal, setIsExternal] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [certificateToDownload, setCertificateToDownload] = useState<string | null>(null);
+  const [certificateToDownload, setCertificateToDownload] = useState<
+    string | null
+  >(null);
 
   const handleToggle = () => {
     setIsExternal(!isExternal);
@@ -243,11 +245,10 @@ export const EndEntityCertificateForm: React.FC = () => {
     onSuccess: async (data: any) => {
       console.log("Certificate request submitted successfully:", data);
       // Reset form
-      setFormData({
-        subjectId: userContext?.currentUser?.id ?? "",
+      setFormData((prev) => ({
+        ...prev,
         caId: "",
         cn: "",
-        o: "",
         ou: "",
         c: "",
         st: "",
@@ -255,7 +256,7 @@ export const EndEntityCertificateForm: React.FC = () => {
         emailAddress: "",
         title: "",
         validityDays: 30,
-      });
+      }));
       setSelectedCA(null);
       setValidationErrors({});
       setCertificateToDownload(data.data.certificateId);
@@ -282,11 +283,10 @@ export const EndEntityCertificateForm: React.FC = () => {
     onSuccess: async (data: any) => {
       console.log(data);
       // Reset form
-      setFormData({
-        subjectId: userContext?.currentUser?.id ?? "",
+      setFormData((prev) => ({
+        ...prev,
         caId: "",
         cn: "",
-        o: "",
         ou: "",
         c: "",
         st: "",
@@ -294,7 +294,7 @@ export const EndEntityCertificateForm: React.FC = () => {
         emailAddress: "",
         title: "",
         validityDays: 30,
-      });
+      }));
       setSelectedCA(null);
       setValidationErrors({});
       await certificateApi.downloadPem(data.certificateId);

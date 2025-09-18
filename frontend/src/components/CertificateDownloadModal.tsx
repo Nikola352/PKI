@@ -81,8 +81,6 @@ export const CertificateDownloadModal: React.FC<
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
-      handleClose();
     },
     onError: (err) => {
       console.error(err.message ?? "Failed to download certificate file");
