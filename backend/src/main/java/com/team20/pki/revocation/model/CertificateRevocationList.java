@@ -1,6 +1,7 @@
 package com.team20.pki.revocation.model;
 
 import com.team20.pki.certificates.model.Certificate;
+import com.team20.pki.common.model.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,8 +24,8 @@ public class CertificateRevocationList {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "certificate_id", nullable = false, unique = true)
-    private Certificate certificate;
+    @JoinColumn(name = "CA_id", nullable = false, unique = true)
+    private User user;
 
     @Lob
     @Column(nullable = false)

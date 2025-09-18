@@ -118,9 +118,9 @@ public class CertificateService implements ICertificateService {
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
 
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-
         User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString(), user);
 
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
@@ -315,9 +315,9 @@ public class CertificateService implements ICertificateService {
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
 
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-
         User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString(), subjectUser);
 
         SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");

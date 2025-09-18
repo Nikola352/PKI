@@ -6,6 +6,7 @@ import com.team20.pki.certificates.repository.ICertificateRepository;
 import com.team20.pki.certificates.service.certificate.impl.CertificateService;
 import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
 import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
+import com.team20.pki.revocation.dto.CRLResponseDTO;
 import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
 import com.team20.pki.revocation.model.CertificateRevocationList;
 import com.team20.pki.revocation.model.CertificateRevocationResponseDTO;
@@ -46,23 +47,28 @@ public class RevocationService implements IRevocationService {
         if (parentCertificate == null){
             return createSelfSignedCRL(certificate, revokeCertificateRequestDTO);
         }
-        CertificateRevocationList crl = crlService.findForCertificateId(parentCertificate.getId());
-        PrivateKey parentPrivateKey = loadPrivateKey(parentCertificate);
+        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getOwner().getId());
+
         if (crl == null){
-            crl = crlService.createEmptyCRL(parentPrivateKey, parentCertificate);
+            crl = crlService.createEmptyCRL(parentCertificate, parentCertificate);
         }
-        crlService.addRevocationToCRL(parentPrivateKey, crl, certificate, revokeCertificateRequestDTO);
+        crlService.addRevocationToCRL(parentCertificate, crl, certificate, revokeCertificateRequestDTO);
 
         return new CertificateRevocationResponseDTO(true);
     }
 
+    @Override
+    public CRLResponseDTO getCertificateRevocationList(UUID certifiedAuthorityId) {
+        CertificateRevocationList crl = crlService.findForCA(certifiedAuthorityId);
+        return new CRLResponseDTO(crl.getRevocationList());
+    }
+
     private CertificateRevocationResponseDTO createSelfSignedCRL(Certificate rootCertificate, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException {
-        CertificateRevocationList crl = crlService.findForCertificateId(rootCertificate.getId());
-        PrivateKey rootPrivateKey = loadPrivateKey(rootCertificate);
+        CertificateRevocationList crl = crlService.findForCA(rootCertificate.getOwner().getId());
         if (crl == null){
-            crl = crlService.createEmptyCRL(rootPrivateKey, rootCertificate);
+            crl = crlService.createEmptyCRL(rootCertificate, rootCertificate);
         }
-        crlService.addRevocationToCRL(rootPrivateKey, crl, rootCertificate, revokeCertificateRequestDTO);
+        crlService.addRevocationToCRL(rootCertificate, crl, rootCertificate, revokeCertificateRequestDTO);
 
         return new CertificateRevocationResponseDTO(true);
     }
@@ -74,13 +80,5 @@ public class RevocationService implements IRevocationService {
             certificateRepository.save(cert);
             revokeDownwards(cert.getId());
         }
-    }
-
-    private PrivateKey loadPrivateKey(Certificate certificate) {
-        final String organization = certificate.getIssuer().getOrganization();
-        final String serialNumber = certificate.getSerialNumber();
-        final String keyStorePass = passwordStorage.loadKeyStorePassword(organization, serialNumber);
-        final String privateKeyPass = passwordStorage.loadPrivateKeyPassword(organization, serialNumber);
-        return keyStoreService.readPrivateKey(serialNumber, keyStorePass, serialNumber, privateKeyPass);
     }
 }

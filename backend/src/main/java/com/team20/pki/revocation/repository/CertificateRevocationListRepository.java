@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface CertificateRevocationListRepository extends JpaRepository<CertificateRevocationList, UUID> {
-    CertificateRevocationList findByCertificateId(UUID certificateId);
+    CertificateRevocationList findByUserId(UUID userId);
 }

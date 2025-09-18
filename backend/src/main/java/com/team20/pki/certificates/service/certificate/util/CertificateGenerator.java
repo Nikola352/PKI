@@ -2,8 +2,10 @@ package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.Subject;
+import com.team20.pki.common.model.User;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -31,7 +33,7 @@ public class CertificateGenerator {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber) {
+    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber, User owner) {
         JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption").setProvider("BC");
 
 
@@ -54,6 +56,14 @@ public class CertificateGenerator {
                     subjectName,
                     generateKeyPair().getPublic()
             );
+            // if the parent certificate
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
+            GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
+            CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
+                    new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
+
+
+            certificateBuilder.addExtension(Extension.cRLDistributionPoints, false, distributionPoint);
 
             X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
             JcaX509CertificateConverter converter = new JcaX509CertificateConverter().setProvider("BC");

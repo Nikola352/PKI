@@ -33,9 +33,10 @@ public class CertificateRevocationListService {
     private final KeyStoreService keyStoreService;
     private final PasswordStorage passwordStorage;
 
-    public CertificateRevocationList createEmptyCRL(PrivateKey caKey, Certificate caCert) throws IOException, GeneralSecurityException, OperatorCreationException
+    public CertificateRevocationList createEmptyCRL(Certificate parentCACertificate, Certificate caCert) throws IOException, GeneralSecurityException, OperatorCreationException
     {
         X509Certificate x509Cert = loadCertificate(caCert);
+        PrivateKey parentPrivateKey = loadPrivateKey(parentCACertificate);
         X509v2CRLBuilder crlGen = new JcaX509v2CRLBuilder(x509Cert.getSubjectX500Principal(),
                 calculateDate(0));
 
@@ -50,15 +51,9 @@ public class CertificateRevocationListService {
         crlGen.addExtension(Extension.authorityKeyIdentifier, false,
                 extUtils.createAuthorityKeyIdentifier(x509Cert));
 
-        // adding crl distribution point
-        String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + x509Cert.getSerialNumber();
-        GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
-        CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
-                new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
-
 
         ContentSigner signer = new JcaContentSignerBuilder(x509Cert.getSigAlgName())
-                .setProvider("BC").build(caKey);
+                .setProvider("BC").build(parentPrivateKey);
 
 
         JcaX509CRLConverter converter = new JcaX509CRLConverter().setProvider("BC");
@@ -66,14 +61,14 @@ public class CertificateRevocationListService {
 
         X509CRL x509CRL = converter.getCRL(crlGen.build(signer));
 
-        CertificateRevocationList crl = new CertificateRevocationList(null, caCert, toByteArray(x509CRL));
+        CertificateRevocationList crl = new CertificateRevocationList(null, caCert.getOwner(), toByteArray(x509CRL));
         return certificateRevocationListRepository.save(crl);
     }
 
-    public CertificateRevocationList addRevocationToCRL(PrivateKey caKey, CertificateRevocationList crl, Certificate certToRevoke, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws IOException, GeneralSecurityException, OperatorCreationException
+    public CertificateRevocationList addRevocationToCRL(Certificate parentCACertificate, CertificateRevocationList crl, Certificate certToRevoke, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws IOException, GeneralSecurityException, OperatorCreationException
     {
         X509CRL x509CRL = fromByteArray(crl.getRevocationList());
-        X509Certificate x509Cert = loadCertificate(crl.getCertificate());
+        X509Certificate x509Cert = loadCertificate(parentCACertificate);
         X509v2CRLBuilder crlGen = new JcaX509v2CRLBuilder(x509CRL);
 
 
@@ -95,9 +90,10 @@ public class CertificateRevocationListService {
         crlGen.addCRLEntry(BigInteger.valueOf(Long.parseLong(certToRevoke.getSerialNumber())),
                 new Date(), extGen.generate());
 
+        PrivateKey parentPrivateKey = loadPrivateKey(parentCACertificate);
 
         ContentSigner signer = new JcaContentSignerBuilder(x509Cert.getSigAlgName())
-                .setProvider("BC").build(caKey);
+                .setProvider("BC").build(parentPrivateKey);
 
 
         JcaX509CRLConverter converter = new JcaX509CRLConverter().setProvider("BC");
@@ -107,8 +103,8 @@ public class CertificateRevocationListService {
         return certificateRevocationListRepository.save(crl);
     }
 
-    public CertificateRevocationList findForCertificateId(UUID certificateId){
-        return certificateRevocationListRepository.findByCertificateId(certificateId);
+    public CertificateRevocationList findForCA(UUID authorityId){
+        return certificateRevocationListRepository.findByUserId(authorityId);
     }
 
     private Date calculateDate(int hoursInFuture)
@@ -131,6 +127,14 @@ public class CertificateRevocationListService {
         final String serialNumber = certificate.getSerialNumber();
         final String keyStorePass = passwordStorage.loadKeyStorePassword(organization, serialNumber);
         return keyStoreService.readCertificate(serialNumber, keyStorePass.toCharArray(), serialNumber);
+    }
+
+    private PrivateKey loadPrivateKey(Certificate certificate) {
+        final String organization = certificate.getIssuer().getOrganization();
+        final String serialNumber = certificate.getSerialNumber();
+        final String keyStorePass = passwordStorage.loadKeyStorePassword(organization, serialNumber);
+        final String privateKeyPass = passwordStorage.loadPrivateKeyPassword(organization, serialNumber);
+        return keyStoreService.readPrivateKey(serialNumber, keyStorePass, serialNumber, privateKeyPass);
     }
 
 }
