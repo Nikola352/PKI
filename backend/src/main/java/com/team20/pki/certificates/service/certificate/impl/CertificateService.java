@@ -16,6 +16,7 @@ import com.team20.pki.certificates.service.certificate.util.CertificateGenerator
 import com.team20.pki.certificates.service.certificate.util.KeyStorePasswordGenerator;
 import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
 import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
+import com.team20.pki.common.exception.InvalidRequestError;
 import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -77,12 +78,12 @@ public class CertificateService implements ICertificateService {
 
         BigInteger serial = generateSerialNumber();
         KeyPair keyPair = rsaGenerator.generateKeyPair();
-        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair);
+        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair, user);
         LocalDate from = LocalDateTime.parse(selfSignSubjectDataDTO.validFrom()).toLocalDate();
         LocalDate to = LocalDateTime.parse(selfSignSubjectDataDTO.validTo()).toLocalDate();
 
         if (from.isAfter(to))
-            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+            throw new InvalidRequestError("Certificate cannot last longer that its parent CA");
 
         Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
@@ -112,7 +113,7 @@ public class CertificateService implements ICertificateService {
         LocalDate today = LocalDate.now();
         LocalDate withDays = today.plusDays(dto.validityDays());
         if (withDays.isAfter(caCertificate.getValidTo()))
-            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+            throw new InvalidRequestError("Certificate cannot last longer that its parent CA");
 
         KeyPair keyPair = rsaGenerator.generateKeyPair();
 
@@ -300,7 +301,7 @@ public class CertificateService implements ICertificateService {
         }
 
         if (!isValid)
-            throw new IllegalArgumentException("Corrupted or invalid certificate file");
+            throw new InvalidRequestError("Corrupted or invalid certificate file");
 
 
         X500Name subjectName = csrCertificate.getSubject();
@@ -310,7 +311,7 @@ public class CertificateService implements ICertificateService {
         LocalDate today = LocalDate.now();
         LocalDate withDays = today.plusDays(data.validityDays());
         if (withDays.isAfter(caCertificate.getValidTo()))
-            throw new IllegalArgumentException("Certificate cannot last longer that its parent CA");
+            throw new InvalidRequestError("Certificate cannot last longer that its parent CA");
 
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
