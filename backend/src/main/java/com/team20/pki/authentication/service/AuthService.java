@@ -123,6 +123,7 @@ public class AuthService {
         return request;
     }
 
+    @Transactional
     public void activateAccount(@Valid VerificationCodeRequestDto verificationCodeDto) {
         RegisterRequest request = getValidRequestOrThrow(verificationCodeDto.getVerificationCode());
 
@@ -135,6 +136,7 @@ public class AuthService {
         registerRequestRepository.delete(request);
     }
 
+    @Transactional
     public void activateAccount(@Valid CaVerificationRequestDto dto) {
         RegisterRequest request = getValidRequestOrThrow(dto.getVerificationCode());
 
@@ -149,6 +151,7 @@ public class AuthService {
         registerRequestRepository.delete(request);
     }
 
+    @Transactional
     public VerificationCheckResponseDto getPendingVerificationSubject(@Valid VerificationCodeRequestDto codeDto) {
         RegisterRequest request = getValidRequestOrThrow(codeDto.getVerificationCode());
         return registerRequestMapper.toCheckDto(request);
