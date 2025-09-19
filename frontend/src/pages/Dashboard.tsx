@@ -25,6 +25,7 @@ import { Link } from "react-router";
 import api from "@/api/axios-config";
 import { UserContext, type UserContextType } from "@/context/UserContext";
 import { CertificateDownloadModal } from "@/components/CertificateDownloadModal";
+import { RevokeCertificateModal } from "@/components/RevokeCertificateModal";
 
 interface UserCertificate {
   id: string;
@@ -134,9 +135,13 @@ const Dashboard: React.FC = () => {
       setCertificateToDownload(certificateId);
     }
   };
+  const [selectedCertificate, setSelectedCertificate] =
+    useState<UserCertificate | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const handleRevokeCertificate = async (certificateId: string) => {
-    console.log("TODO: revoke: ", certificateId);
+  const handleRevokeCertificate = async (certificate: UserCertificate) => {
+    setSelectedCertificate(certificate);
+    setShowModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -273,7 +278,7 @@ const Dashboard: React.FC = () => {
 
                     {cert.status === "ACTIVE" && (
                       <button
-                        onClick={() => handleRevokeCertificate(cert.id)}
+                        onClick={() => handleRevokeCertificate(cert)}
                         className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
                         title="Revoke Certificate"
                       >
@@ -402,7 +407,7 @@ const Dashboard: React.FC = () => {
 
                         {cert.status === "ACTIVE" && (
                           <button
-                            onClick={() => handleRevokeCertificate(cert.id)}
+                            onClick={() => handleRevokeCertificate(cert)}
                             className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
                             title="Revoke Certificate"
                           >
@@ -694,6 +699,13 @@ const Dashboard: React.FC = () => {
         certificateId={certificateToDownload ?? ""}
         certificateName={`certificate-${certificateToDownload}`}
       />
+      {selectedCertificate && (
+        <RevokeCertificateModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          certificate={selectedCertificate}
+        />
+      )}
     </div>
   );
 };

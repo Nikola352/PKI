@@ -13,9 +13,9 @@ import java.util.UUID;
 
 @Repository
 public interface ICertificateRepository extends JpaRepository<Certificate, UUID> {
-    List<Certificate> findCertificatesByTypeIn(Collection<CertificateType> types);
+    List<Certificate> findCertificatesByTypeInAndIsRevokedFalse(Collection<CertificateType> types);
 
-    @Query("select c from Certificate c where c.owner.id =:id")
+    @Query("select c from Certificate c where c.owner.id =:id and c.isRevoked = false")
     List<Certificate> findByOwnerId(@Param("id") UUID id);
 
     @Query("SELECT COUNT(c) FROM Certificate c WHERE c.parent.owner.id = :id")
@@ -23,7 +23,9 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
 
     List<Certificate> findAllByParent_Id(UUID parentId);
 
-    List<Certificate> findByType(CertificateType type);
+    List<Certificate> findAllByParent_IdAndIsRevokedFalse(UUID parentId);
+
+    List<Certificate> findByTypeAndIsRevokedFalse(CertificateType type);
 
     @Query("""
     SELECT c
@@ -37,7 +39,7 @@ public interface ICertificateRepository extends JpaRepository<Certificate, UUID>
               c.type = com.team20.pki.certificates.model.CertificateType.INTERMEDIATE
               AND po.id <> :caId
           )
-      )
+      ) AND c.isRevoked = false
     """)
     List<Certificate> findCaRoots(@Param("caId") UUID caId);
 

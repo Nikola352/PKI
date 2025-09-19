@@ -118,9 +118,9 @@ public class CertificateService implements ICertificateService {
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
 
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-
         User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString(), user);
 
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
@@ -187,7 +187,7 @@ public class CertificateService implements ICertificateService {
     @Override
     public List<CAResponseDTO> getCertificateAuthorities(UUID subjectId) {
         User subject = userRepository.findById(subjectId).orElseThrow(() -> new EntityNotFoundException("Subject not found"));
-        List<Certificate> CAs = certificateRepository.findCertificatesByTypeIn(List.of(CertificateType.ROOT, CertificateType.INTERMEDIATE));
+        List<Certificate> CAs = certificateRepository.findCertificatesByTypeInAndIsRevokedFalse(List.of(CertificateType.ROOT, CertificateType.INTERMEDIATE));
         CAs = CAs.stream().filter(certificate -> {
             try {
                 return certificate.getSubject().getOrganization().equalsIgnoreCase(subject.getOrganization());
@@ -220,7 +220,7 @@ public class CertificateService implements ICertificateService {
     @Override
     @Transactional
     public List<CertificateNodeResponseDto> getAllCertificates() {
-        final List<Certificate> roots = certificateRepository.findByType(CertificateType.ROOT);
+        final List<Certificate> roots = certificateRepository.findByTypeAndIsRevokedFalse(CertificateType.ROOT);
         return roots.stream().map(this::getSubtree).toList();
     }
 
@@ -240,7 +240,7 @@ public class CertificateService implements ICertificateService {
     }
 
     private CertificateNodeResponseDto getSubtree(Certificate certificate) {
-        final List<Certificate> children = certificateRepository.findAllByParent_Id(certificate.getId());
+        final List<Certificate> children = certificateRepository.findAllByParent_IdAndIsRevokedFalse(certificate.getId());
         return new CertificateNodeResponseDto(
                 certificateMapper.toDto(certificate),
                 children.stream().map(this::getSubtree).toList()
@@ -315,9 +315,9 @@ public class CertificateService implements ICertificateService {
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
 
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString());
-
         User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
+
+        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString(), subjectUser);
 
         SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
