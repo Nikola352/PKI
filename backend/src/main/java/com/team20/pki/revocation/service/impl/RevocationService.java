@@ -1,11 +1,7 @@
 package com.team20.pki.revocation.service.impl;
 
-import com.team20.pki.certificates.dto.CertificateCaSignResponseDTO;
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.repository.ICertificateRepository;
-import com.team20.pki.certificates.service.certificate.impl.CertificateService;
-import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
-import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
 import com.team20.pki.revocation.dto.CRLResponseDTO;
 import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
 import com.team20.pki.revocation.model.CertificateRevocationList;
@@ -20,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.PrivateKey;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +26,6 @@ import java.util.UUID;
 public class RevocationService implements IRevocationService {
     private final CertificateRevocationListService crlService;
     private final ICertificateRepository certificateRepository;
-    private final PasswordStorage passwordStorage;
-    private final KeyStoreService keyStoreService;
 
 
     @Override
@@ -40,7 +33,7 @@ public class RevocationService implements IRevocationService {
         Certificate certificate = certificateRepository.findById(revokingCertificateId).
                 orElseThrow(()-> new EntityNotFoundException("Certificate not found"));
         certificate.setIsRevoked(true);
-        revokeDownwards(certificate.getId());
+        revokeDownwards(certificate);
         certificateRepository.save(certificate);
 
         Certificate parentCertificate = certificate.getParent();
@@ -50,7 +43,7 @@ public class RevocationService implements IRevocationService {
         CertificateRevocationList crl = crlService.findForCA(parentCertificate.getOwner().getId());
 
         if (crl == null){
-            crl = crlService.createEmptyCRL(parentCertificate, parentCertificate);
+            crl = crlService.createEmptyCRL(parentCertificate);
         }
         crlService.addRevocationToCRL(parentCertificate, crl, certificate, revokeCertificateRequestDTO);
 
@@ -66,19 +59,29 @@ public class RevocationService implements IRevocationService {
     private CertificateRevocationResponseDTO createSelfSignedCRL(Certificate rootCertificate, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException {
         CertificateRevocationList crl = crlService.findForCA(rootCertificate.getOwner().getId());
         if (crl == null){
-            crl = crlService.createEmptyCRL(rootCertificate, rootCertificate);
+            crl = crlService.createEmptyCRL(rootCertificate);
         }
         crlService.addRevocationToCRL(rootCertificate, crl, rootCertificate, revokeCertificateRequestDTO);
 
         return new CertificateRevocationResponseDTO(true);
     }
 
-    private void revokeDownwards(UUID certificateId){
-        List<Certificate> issuedCertificates = certificateRepository.findAllByParent_Id(certificateId);
+    private void revokeDownwards(Certificate parentCertificate) throws GeneralSecurityException, IOException, OperatorCreationException {
+        List<Certificate> issuedCertificates = certificateRepository.findAllByParent_Id(parentCertificate.getId());
         for (Certificate cert: issuedCertificates){
             cert.setIsRevoked(true);
             certificateRepository.save(cert);
-            revokeDownwards(cert.getId());
+            addCertificateToCRL(parentCertificate, cert);
+            revokeDownwards(cert);
         }
+    }
+
+    private void addCertificateToCRL(Certificate parentCertificate, Certificate certToRevoke) throws GeneralSecurityException, IOException, OperatorCreationException {
+        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getOwner().getId());
+
+        if (crl == null){
+            crl = crlService.createEmptyCRL(parentCertificate);
+        }
+        crlService.addRevocationToCRL(parentCertificate, crl, certToRevoke, new RevokeCertificateRequestDTO(2));
     }
 }

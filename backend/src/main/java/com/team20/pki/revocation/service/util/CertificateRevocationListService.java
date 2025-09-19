@@ -34,9 +34,9 @@ public class CertificateRevocationListService {
     private final KeyStoreService keyStoreService;
     private final PasswordStorage passwordStorage;
 
-    public CertificateRevocationList createEmptyCRL(Certificate parentCACertificate, Certificate caCert) throws IOException, GeneralSecurityException, OperatorCreationException
+    public CertificateRevocationList createEmptyCRL(Certificate parentCACertificate) throws IOException, GeneralSecurityException, OperatorCreationException
     {
-        X509Certificate x509Cert = loadCertificate(caCert);
+        X509Certificate x509Cert = loadCertificate(parentCACertificate);
         PrivateKey parentPrivateKey = loadPrivateKey(parentCACertificate);
         X509v2CRLBuilder crlGen = new JcaX509v2CRLBuilder(x509Cert.getSubjectX500Principal(),
                 calculateDate(0));
@@ -62,7 +62,7 @@ public class CertificateRevocationListService {
 
         X509CRL x509CRL = converter.getCRL(crlGen.build(signer));
 
-        CertificateRevocationList crl = new CertificateRevocationList(null, caCert.getOwner(), toByteArray(x509CRL));
+        CertificateRevocationList crl = new CertificateRevocationList(null, parentCACertificate.getOwner(), toByteArray(x509CRL));
         return certificateRevocationListRepository.save(crl);
     }
 
@@ -105,7 +105,7 @@ public class CertificateRevocationListService {
     }
 
     public CertificateRevocationList findForCA(UUID authorityId){
-        return certificateRevocationListRepository.findByUserId(authorityId).orElseThrow(() -> new EntityNotFoundException("Crl is not found!"));
+        return certificateRevocationListRepository.findByUserId(authorityId);
     }
 
     private Date calculateDate(int hoursInFuture)
