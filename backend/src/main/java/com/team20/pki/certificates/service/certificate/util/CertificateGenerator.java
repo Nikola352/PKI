@@ -34,7 +34,7 @@ public class CertificateGenerator {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber, User owner) {
+    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber, PublicKey publicKey) {
         JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption").setProvider("BC");
 
 
@@ -55,7 +55,7 @@ public class CertificateGenerator {
                     notBefore,
                     notAfter,
                     subjectName,
-                    generateKeyPair().getPublic()
+                    publicKey
             );
             // if the parent certificate
             String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
