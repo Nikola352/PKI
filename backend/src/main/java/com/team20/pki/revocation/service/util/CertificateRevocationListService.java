@@ -5,6 +5,7 @@ import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
 import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
 import com.team20.pki.revocation.model.CertificateRevocationList;
 import com.team20.pki.revocation.repository.CertificateRevocationListRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.asn1.x509.CRLReason;
@@ -104,7 +105,7 @@ public class CertificateRevocationListService {
     }
 
     public CertificateRevocationList findForCA(UUID authorityId){
-        return certificateRevocationListRepository.findByUserId(authorityId);
+        return certificateRevocationListRepository.findByUserId(authorityId).orElseThrow(() -> new EntityNotFoundException("Crl is not found!"));
     }
 
     private Date calculateDate(int hoursInFuture)
