@@ -2,10 +2,11 @@ package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.Subject;
+import com.team20.pki.common.exception.ServerError;
 import com.team20.pki.common.model.User;
-import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.*;
+import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -40,7 +41,7 @@ public class CertificateGenerator {
         try {
             ContentSigner contentSigner = builder.build(parentPrivateKey);
 
-            X500Name issuerName = parent.getIssuer().toX500Name();
+            X500Name issuerName = parent.getSubject().toX500Name();
             X500Name subjectName = subject.toX500Name();
 
             BigInteger serial = new BigInteger(serialNumber);
@@ -79,7 +80,7 @@ public class CertificateGenerator {
 
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair) {
+    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner) {
 
         try {
             X500Name issuer = new X500Name("CN=Root Certificate");
@@ -102,24 +103,22 @@ public class CertificateGenerator {
                     keyPair.getPublic()
             );
 
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + owner.getId();
+            GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
+            CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
+                    new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
+
+            certBuilder.addExtension(Extension.cRLDistributionPoints, false, distributionPoint);
+
             X509Certificate certificate = new JcaX509CertificateConverter()
                     .setProvider("BC")
                     .getCertificate(certBuilder.build(contentSigner));
 
             certificate.verify(keyPair.getPublic());
             return certificate;
-        } catch (OperatorCreationException e) {
-            throw new RuntimeException(e);
-        } catch (CertificateException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } catch (SignatureException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidKeyException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchProviderException e) {
-            throw new RuntimeException(e);
+        } catch (OperatorCreationException | CertificateException | NoSuchAlgorithmException | SignatureException |
+                 InvalidKeyException | NoSuchProviderException | CertIOException e) {
+            throw new ServerError("Could not create certificate", 500);
         }
 
     }
