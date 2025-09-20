@@ -3,6 +3,11 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as yup from "yup";
 import api from "@/api/axios-config";
 import { useNavigate, useParams } from "react-router";
+import {
+  keyUsageOptions,
+  extendedKeyUsageOptions,
+} from "@/model/ca.certificate.extenstions";
+import { Key, ChevronDown, Shield, ShieldCheck } from "lucide-react";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 interface CAUser {
@@ -58,6 +63,8 @@ interface CertificateRequestData {
   pseudonym: string; // Pseudonym
   generationQualifier: string; // Generation Qualifier
   validityDays: number; // Certificate validity in days
+  keyUsage: string[];
+  extendedKeyUsage: string[];
 }
 
 interface FormErrors {
@@ -121,6 +128,8 @@ export const RequestCACertificate: React.FC = () => {
     surname: "",
     initials: "",
     pseudonym: "",
+    keyUsage: [],
+    extendedKeyUsage: [],
     generationQualifier: "",
     validityDays: 365,
   });
@@ -366,6 +375,8 @@ export const RequestCACertificate: React.FC = () => {
         pseudonym: "",
         generationQualifier: "",
         validityDays: 365,
+        extendedKeyUsage: [],
+        keyUsage: [],
       });
       setSelectedCA(null);
       setValidationErrors({});
@@ -381,7 +392,25 @@ export const RequestCACertificate: React.FC = () => {
     setSelectedCA(ca);
     setValidationErrors({});
   };
+  const [isKeyUsageAccordionOpen, setIsKeyUsageAccordionOpen] = useState(false);
+  const handleKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      keyUsage: checked
+        ? [...prev.keyUsage, value]
+        : prev.keyUsage.filter((usage) => usage !== value),
+    }));
+  };
 
+  // Handle Extended Key Usage changes
+  const handleExtendedKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      extendedKeyUsage: checked
+        ? [...prev.extendedKeyUsage, value]
+        : prev.extendedKeyUsage.filter((usage) => usage !== value),
+    }));
+  };
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ): void => {
@@ -604,6 +633,126 @@ export const RequestCACertificate: React.FC = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg border border-slate-600">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIsKeyUsageAccordionOpen(!isKeyUsageAccordionOpen)
+                      }
+                      className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-lg"
+                    >
+                      <div className="flex items-center">
+                        <Key className="w-5 h-5 text-blue-400 mr-3" />
+                        <span className="text-white font-medium">
+                          Key Usage Settings
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-white transition-transform duration-200 ${
+                          isKeyUsageAccordionOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isKeyUsageAccordionOpen && (
+                      <div className="px-6 pb-6">
+                        <div className="border-t border-slate-600 pt-4">
+                          {/* Key Usage */}
+                          <div className="mb-6">
+                            <h4 className="text-white font-medium mb-3 flex items-center">
+                              <Shield className="w-4 h-4 mr-2 text-blue-400" />
+                              Key Usage{" "}
+                              <span className="text-red-400 ml-1">*</span>
+                            </h4>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Select how this certificate key can be used
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {keyUsageOptions.map((option) => (
+                                <label
+                                  key={option.value}
+                                  className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.keyUsage.includes(
+                                      option.value
+                                    )}
+                                    onChange={(e) =>
+                                      handleKeyUsageChange(
+                                        option.value,
+                                        e.target.checked
+                                      )
+                                    }
+                                    className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-white text-sm font-medium block">
+                                      {option.label}
+                                    </span>
+                                    <span className="text-slate-300 text-xs">
+                                      {option.description}
+                                    </span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                            {validationErrors.keyUsage && (
+                              <p className={errorClasses}>
+                                {validationErrors.keyUsage}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Extended Key Usage */}
+                          <div>
+                            <h4 className="text-white font-medium mb-3 flex items-center">
+                              <ShieldCheck className="w-4 h-4 mr-2 text-blue-400" />
+                              Extended Key Usage{" "}
+                            </h4>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Select specific purposes for this certificate
+                            </p>
+                            <div className="grid grid-cols-1 gap-3">
+                              {extendedKeyUsageOptions.map((option) => (
+                                <label
+                                  key={option.value}
+                                  className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.extendedKeyUsage.includes(
+                                      option.value
+                                    )}
+                                    onChange={(e) =>
+                                      handleExtendedKeyUsageChange(
+                                        option.value,
+                                        e.target.checked
+                                      )
+                                    }
+                                    className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-white text-sm font-medium block">
+                                      {option.label}
+                                    </span>
+                                    <span className="text-slate-300 text-xs">
+                                      {option.description}
+                                    </span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                            {validationErrors.extendedKeyUsage && (
+                              <p className={errorClasses}>
+                                {validationErrors.extendedKeyUsage}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Subject Information */}
