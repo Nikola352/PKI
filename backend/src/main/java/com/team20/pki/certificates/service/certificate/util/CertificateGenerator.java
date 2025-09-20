@@ -80,26 +80,25 @@ public class CertificateGenerator {
 
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner) {
+    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
 
-        try {
-            X500Name issuer = new X500Name("CN=Root Certificate");
-            X500Name subject = issuer;
+        try {;
+            X500Name subjectName = subject.toX500Name();
+            X500Name issuerName = subjectName;
 
-            Date notBefore = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // yesterday
-            Date notAfter = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+            Date notBefore = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            Date notAfter = Date.from(endDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-            ContentSigner contentSigner = null;
-            contentSigner = new JcaContentSignerBuilder("SHA256WithRSAEncryption")
+            ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256WithRSAEncryption")
                     .setProvider("BC")
                     .build(keyPair.getPrivate());
 
             JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                    issuer,
+                    issuerName,
                     serialNumber,
                     notBefore,
                     notAfter,
-                    subject,
+                    subjectName,
                     keyPair.getPublic()
             );
 
