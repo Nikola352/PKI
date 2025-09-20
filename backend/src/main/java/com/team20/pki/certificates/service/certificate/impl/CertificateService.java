@@ -17,6 +17,7 @@ import com.team20.pki.certificates.service.certificate.util.KeyStorePasswordGene
 import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
 import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
 import com.team20.pki.common.exception.InvalidRequestError;
+import com.team20.pki.common.exception.NotFoundError;
 import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -73,18 +74,26 @@ public class CertificateService implements ICertificateService {
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
 
-        User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        String dateStr = "2025-09-20";
+        User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new NotFoundError("User not found"));
+        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
+        if(rootExists)
+            throw new InvalidRequestError("Cannot issue another root!");
+
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
+        Subject subject = new Subject(name);
 
         BigInteger serial = generateSerialNumber();
         KeyPair keyPair = rsaGenerator.generateKeyPair();
-        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair, user);
+
         LocalDate from = LocalDateTime.parse(selfSignSubjectDataDTO.validFrom()).toLocalDate();
         LocalDate to = LocalDateTime.parse(selfSignSubjectDataDTO.validTo()).toLocalDate();
 
         if (from.isAfter(to))
             throw new InvalidRequestError("Certificate cannot last longer that its parent CA");
 
+        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair, user, from, to, subject);
         Certificate certificate = certificateFactory.createCertificate(
                 CertificateType.ROOT,
                 serial.toString(),
@@ -234,10 +243,10 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public RootsExistResponse rootsExistsForUser(UUID id) {
-        User user = userRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("USer not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("USer not found"));
         boolean existsRoot = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
         boolean isRegularUser = user.getRole().equals(User.Role.REGULAR_USER);
-        return new RootsExistResponse(existsRoot, isRegularUser );
+        return new RootsExistResponse(existsRoot, isRegularUser);
     }
 
     private CertificateNodeResponseDto getSubtree(Certificate certificate) {

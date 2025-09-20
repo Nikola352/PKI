@@ -199,6 +199,7 @@ export const IssueSelfSigned: React.FC = () => {
         validTo: getOneYearFromNow(),
       });
       setValidationErrors({});
+      navigate("/view-users");
     },
     onError: (error) => {
       console.error("Error creating certificate:", error);
