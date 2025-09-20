@@ -1,9 +1,11 @@
 package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
+import com.team20.pki.certificates.model.CertificateType;
 import com.team20.pki.certificates.model.Subject;
 import com.team20.pki.common.exception.ServerError;
 import com.team20.pki.common.model.User;
+import com.team20.pki.util.ExtensionUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
@@ -14,6 +16,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -27,14 +30,28 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class CertificateGenerator {
+    private final ExtensionUtils extensionUtils;
+
     public CertificateGenerator() {
         Security.addProvider(new BouncyCastleProvider());
+        extensionUtils = new ExtensionUtils();
     }
 
-    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber, PublicKey publicKey) {
+    public X509Certificate generateCertificate(
+            Subject subject,
+            PrivateKey parentPrivateKey,
+            Certificate parent,
+            LocalDate startDate,
+            LocalDate endDate,
+            String serialNumber,
+            PublicKey publicKey,
+            CertificateType type,
+            List<String> keyUsage,
+            List<String> extendedKeyUsage) {
         JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption").setProvider("BC");
 
 
@@ -57,7 +74,15 @@ public class CertificateGenerator {
                     subjectName,
                     publicKey
             );
+            if (type.equals(CertificateType.INTERMEDIATE)) {
+                extensionUtils.addCertificateAuthorityBaseExtensions(certificateBuilder, null);
+            } else {
+                extensionUtils.addEndEntityBaseExtensions(certificateBuilder);
+            }
+            extensionUtils.addKeyUsageExtensions(certificateBuilder, keyUsage);
+            extensionUtils.addExtendedKeyUsage(certificateBuilder, extendedKeyUsage);
             // if the parent certificate
+
             String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
@@ -82,7 +107,8 @@ public class CertificateGenerator {
 
     public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
 
-        try {;
+        try {
+            ;
             X500Name subjectName = subject.toX500Name();
             X500Name issuerName = subjectName;
 
@@ -101,6 +127,8 @@ public class CertificateGenerator {
                     subjectName,
                     keyPair.getPublic()
             );
+
+            extensionUtils.addCertificateAuthorityBaseExtensions(certBuilder, null);
 
             String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + owner.getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
