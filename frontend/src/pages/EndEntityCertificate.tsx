@@ -833,7 +833,7 @@ export const EndEntityCertificateForm: React.FC = () => {
                         {isFieldVisible("cn") && (
                           <div>
                             <label htmlFor="cn" className={labelClasses}>
-                              Full Name{" "}
+                              Common Name{" "}
                               {isFieldRequired("cn") && (
                                 <span className="text-red-500">*</span>
                               )}
