@@ -6,7 +6,7 @@ import com.team20.pki.common.dto.UserGetAllResponse;
 import com.team20.pki.common.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +23,18 @@ public class UserController {
     private final IUserService userService;
 
     @GetMapping("/certificate-issue")
+    @Secured("ROLE_CA")
     public ResponseEntity<List<UserCertificateIssueResponseDTO>> getUsersForCertificateIssue(@AuthenticationPrincipal UserDetailsImpl user) {
         return ResponseEntity.ok(userService.getUsersForCertificateIssue(user));
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserCertificateIssueResponseDTO> getUser(@PathVariable(name = "id") UUID id) {
         return  ResponseEntity.ok(userService.getUser(id));
     }
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+
     @GetMapping("/regular")
+    @Secured("ROLE_ADMINISTRATOR")
     public ResponseEntity<List<UserGetAllResponse>> getRegularUsers() {
         return  ResponseEntity.ok(userService.getAllRegularUsers());
     }
