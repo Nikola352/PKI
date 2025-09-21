@@ -291,7 +291,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
+    public CertificateCaSignResponseDTO generateCaSignedCertificateExternal(UserDetailsImpl user, CaSignSubjectExternalDataDTO data, MultipartFile csr) throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, InvalidNameException {
         CertificateType certificateType = declareCertificateType(user.getUserRole());
         Certificate caCertificate = certificateRepository.findById(data.caId()).orElseThrow(() -> new EntityNotFoundException("CA Not found"));
         String pemFile = new String(csr.getBytes());
@@ -316,6 +316,11 @@ public class CertificateService implements ICertificateService {
         X500Name subjectName = csrCertificate.getSubject();
         Subject subject = new Subject(subjectName);
         BigInteger serialNumber = generateSerialNumber();
+
+        // check if ca organization is equal to csr organization
+        if (!caCertificate.getSubject().getOrganization().equals(subject.getOrganization())){
+            throw new InvalidRequestError("Invalid csr organization for selected CA!");
+        }
 
         LocalDate today = LocalDate.now();
         LocalDate withDays = today.plusDays(data.validityDays());
