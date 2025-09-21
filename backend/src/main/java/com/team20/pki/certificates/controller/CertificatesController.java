@@ -87,8 +87,12 @@ public class CertificatesController {
 
     @GetMapping("/{id}/download/{requestId}")
     @PreAuthorize("@certificatePermissionEvaluator.canDownloadKeyPair(authentication, #certificateId)")
-    public ResponseEntity<byte[]> downloadCertificate(@PathVariable("id") UUID certificateId, @PathVariable UUID requestId) {
-        CertificateDownloadResponseDTO downloadResponse = certificateDownloadService.downloadCertificate(certificateId, requestId);
+    public ResponseEntity<byte[]> downloadCertificate(
+            @PathVariable("id") UUID certificateId,
+            @PathVariable UUID requestId,
+            @RequestParam(name = "includeChain", defaultValue = "true") Boolean includeChain
+    ) {
+        CertificateDownloadResponseDTO downloadResponse = certificateDownloadService.downloadCertificate(certificateId, requestId, includeChain);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + downloadResponse.fileName() + "\"")
                 .contentType(MediaType.valueOf("application/x-pkcs12"))
                 .body(downloadResponse.certificateBytes());
