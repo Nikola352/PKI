@@ -18,8 +18,7 @@ target/
 *.iws
 *.iml
 *.ipr
-*.jks
-*.key
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -35,3 +34,8 @@ build/
 
 ### Dev setup ###
 /src/main/resources/application-*.properties
+
+### Keystores ###
+*.jks
+*.key
+*.p12
