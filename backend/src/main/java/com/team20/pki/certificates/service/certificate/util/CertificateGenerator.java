@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
@@ -48,6 +49,7 @@ public class CertificateGenerator {
     public X509Certificate generateCertificate(
             Subject subject,
             PrivateKey parentPrivateKey,
+            PublicKey parentPublicKey,
             Certificate parent,
             LocalDate startDate,
             LocalDate endDate,
@@ -79,11 +81,24 @@ public class CertificateGenerator {
                     subjectName,
                     publicKey
             );
+            SubjectKeyIdentifier ski = new JcaX509ExtensionUtils().createSubjectKeyIdentifier(publicKey);
+            certificateBuilder.addExtension(Extension.subjectKeyIdentifier, false, ski);
+
+            AuthorityKeyIdentifier aki = new JcaX509ExtensionUtils().createAuthorityKeyIdentifier(parentPublicKey);
+            certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, aki);
+
             if (type.equals(CertificateType.END_ENTITY)) {
                 extensionUtils.addEndEntityBaseExtensions(certificateBuilder);
             } else {
                 extensionUtils.addCertificateAuthorityBaseExtensions(certificateBuilder, maxLength);
             }
+
+            GeneralName[] sanNames = new GeneralName[] {
+                    new GeneralName(GeneralName.dNSName, "localhost"),
+                    new GeneralName(GeneralName.iPAddress, "127.0.0.1"),
+                    new GeneralName(GeneralName.iPAddress, "::1")
+            };
+            certificateBuilder.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(sanNames));
 
             List<String> updatedKeyUsage = concatenateBaseCaKeyUsage(type, keyUsage);
             extensionUtils.addKeyUsageExtensions(certificateBuilder, updatedKeyUsage);

@@ -43,10 +43,7 @@ import javax.naming.InvalidNameException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
@@ -133,12 +130,13 @@ public class CertificateService implements ICertificateService {
         KeyPair keyPair = rsaGenerator.generateKeyPair();
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
-
+        PublicKey parentPublicKey = loadParentPublicKey(caCertificate);
         User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
 
         X509Certificate cert = generator.generateCertificate(
                 subject,
                 parentPrivateKey,
+                parentPublicKey,
                 caCertificate,
                 today,
                 withDays,
@@ -301,6 +299,14 @@ public class CertificateService implements ICertificateService {
         return BigInteger.valueOf(System.currentTimeMillis());
     }
 
+    private PublicKey loadParentPublicKey(Certificate certificate) {
+        String issuersOrganization = certificate.getIssuer().getOrganization();
+        String parentSerialNumber = certificate.getSerialNumber();
+        String parentKeystorePassword = passwordStorage.loadKeyStorePassword(issuersOrganization, parentSerialNumber);
+        java.security.cert.Certificate cert = keyStoreService.readCertificate(parentSerialNumber, parentKeystorePassword.toCharArray(), parentSerialNumber);
+        return cert.getPublicKey();
+    }
+
     private PrivateKey loadParentPrivateKey(Certificate certificate) {
         String issuersOrganization = certificate.getIssuer().getOrganization();
         String parentSerialNumber = certificate.getSerialNumber();
@@ -337,7 +343,7 @@ public class CertificateService implements ICertificateService {
         BigInteger serialNumber = generateSerialNumber();
 
         // check if ca organization is equal to csr organization
-        if (!caCertificate.getSubject().getOrganization().equals(subject.getOrganization())){
+        if (!caCertificate.getSubject().getOrganization().equals(subject.getOrganization())) {
             throw new InvalidRequestError("Invalid csr organization for selected CA!");
         }
 
@@ -348,6 +354,7 @@ public class CertificateService implements ICertificateService {
 
 
         PrivateKey parentPrivateKey = loadParentPrivateKey(caCertificate);
+        PublicKey parentPublicKey = loadParentPublicKey(caCertificate);
 
         User subjectUser = userRepository.findById(data.subjectId()).orElseThrow(EntityNotFoundException::new);
 
@@ -357,6 +364,7 @@ public class CertificateService implements ICertificateService {
         X509Certificate cert = generator.generateCertificate(
                 subject,
                 parentPrivateKey,
+                parentPublicKey,
                 caCertificate,
                 today,
                 withDays,
