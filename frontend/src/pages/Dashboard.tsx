@@ -43,6 +43,10 @@ interface CertificateNode {
   children?: CertificateNode[];
 }
 
+interface DownloadCheckResponse {
+  isAvailable: boolean;
+}
+
 const Dashboard: React.FC = () => {
   const { userRole, loggedIn, userDataLoaded, currentUser, logOut } =
     useContext(UserContext) as UserContextType;
@@ -101,6 +105,20 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const checkFirstDownloadAvailability = async (
+    certId: string
+  ): Promise<boolean> => {
+    try {
+      const response = await api.get<DownloadCheckResponse>(
+        `/api/certificates/${certId}/download/check`
+      );
+      return response.data.isAvailable;
+    } catch (error) {
+      console.error("Error checking download availability:", error);
+      return false;
+    }
+  };
+
   const downloadPem = async (certId: string) => {
     try {
       const response = await api.get(
@@ -125,16 +143,29 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDownloadCertificate = (
+  const handleDownloadCertificate = async (
     certificateId: string,
     type: "ROOT" | "INTERMEDIATE" | "END_ENTITY"
   ) => {
-    if (type === "END_ENTITY") {
+    // For regular users with end-entity certificates, check first download availability
+    if (userRole === "REGULAR_USER" && type === "END_ENTITY") {
+      const isFirstDownloadAvailable = await checkFirstDownloadAvailability(
+        certificateId
+      );
+      if (isFirstDownloadAvailable) {
+        setCertificateToDownload(certificateId);
+      } else {
+        downloadPem(certificateId);
+      }
+    } else if (type === "END_ENTITY") {
+      // Other users (CA_USER, ADMINISTRATOR) always download PEM for end-entity certificates
       downloadPem(certificateId);
     } else {
+      // ROOT and INTERMEDIATE certificates use modal for all users
       setCertificateToDownload(certificateId);
     }
   };
+
   const [selectedCertificate, setSelectedCertificate] =
     useState<UserCertificate | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -210,6 +241,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const getDownloadTooltip = (type: "ROOT" | "INTERMEDIATE" | "END_ENTITY") => {
+    if (userRole === "REGULAR_USER" && type === "END_ENTITY") {
+      return "Download Certificate (PKCS12 if first download, PEM otherwise)";
+    }
+    return type === "END_ENTITY" ? "Download PEM" : "Download PKCS12";
+  };
+
   const renderCertificateNode = (node: CertificateNode, level: number = 0) => {
     const cert = node.certificate;
     const isExpanded = expandedNodes.has(cert.id);
@@ -267,11 +305,7 @@ const Dashboard: React.FC = () => {
                         handleDownloadCertificate(cert.id, cert.type)
                       }
                       className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
-                      title={
-                        cert.type === "END_ENTITY"
-                          ? "Download PEM"
-                          : "Download PKCS12"
-                      }
+                      title={getDownloadTooltip(cert.type)}
                     >
                       <Download className="w-5 h-5" />
                     </button>
@@ -396,11 +430,7 @@ const Dashboard: React.FC = () => {
                             handleDownloadCertificate(cert.id, cert.type)
                           }
                           className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
-                          title={
-                            cert.type === "END_ENTITY"
-                              ? "Download PEM"
-                              : "Download PKCS12"
-                          }
+                          title={getDownloadTooltip(cert.type)}
                         >
                           <Download className="w-5 h-5" />
                         </button>
