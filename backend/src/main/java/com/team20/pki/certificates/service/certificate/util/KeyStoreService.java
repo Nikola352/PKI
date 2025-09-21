@@ -1,17 +1,25 @@
 package com.team20.pki.certificates.service.certificate.util;
 
+import com.team20.pki.common.exception.InvalidRequestError;
+import com.team20.pki.common.exception.ServerError;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+@Slf4j
 @Component
 public class KeyStoreService {
-    private KeyStore keyStore;
+    private final KeyStore keyStore;
+
     @Value("${cert-keystore.path}")
     private String certificateFilePath;
 
@@ -24,16 +32,20 @@ public class KeyStoreService {
         try {
             keyStore.setKeyEntry(alias, privateKey, password, new Certificate[]{certificate});
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
+            throw new InvalidRequestError(e.getMessage());
         }
     }
+
     public void write(String alias, java.security.cert.Certificate certificate) {
         try {
             keyStore.setCertificateEntry(alias, certificate);
         } catch (KeyStoreException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
+            throw new InvalidRequestError(e.getMessage());
         }
     }
+
     public void loadKeyStore(String fileName, char[] password) {
         try {
             if (fileName != null) {
@@ -41,14 +53,8 @@ public class KeyStoreService {
             } else {
                 keyStore.load(null, password);
             }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (CertificateException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+        } catch (CertificateException | IOException | NoSuchAlgorithmException e) {
+            throw new InvalidRequestError(e.getMessage());
         }
     }
 
@@ -61,7 +67,8 @@ public class KeyStoreService {
             keyStore.load(in, password);
             return (X509Certificate) keyStore.getCertificate(alias);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read certificate", e);
+            log.error(e.getMessage());
+            throw new ServerError("Failed to read certificate", 500);
         }
     }
 
@@ -74,24 +81,39 @@ public class KeyStoreService {
             ks.load(in, keyStorePass.toCharArray());
 
             if (ks.isKeyEntry(alias)) {
-                PrivateKey pk = (PrivateKey) ks.getKey(alias, pass.toCharArray());
-                return pk;
+                return (PrivateKey) ks.getKey(alias, pass.toCharArray());
             }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
-            e.printStackTrace();
+        } catch (KeyStoreException | NoSuchProviderException | NoSuchAlgorithmException | CertificateException |
+                 IOException | UnrecoverableKeyException e) {
+            log.error(e.getMessage());
+            throw new ServerError("Failed to read private key for alias: " + alias, 500);
         }
         return null;
+    }
+
+    public void removePrivateKey(String keyStoreFile, char[] keyStorePassword, String alias) {
+        try (FileInputStream fis = new FileInputStream(certificateFilePath + "/" + keyStoreFile + ".jks")) {
+            keyStore.load(fis, keyStorePassword);
+
+            if (!keyStore.containsAlias(alias)) {
+                throw new InvalidRequestError("Alias not found: " + alias);
+            }
+
+            Certificate cert = keyStore.getCertificate(alias);
+            if (cert == null) {
+                throw new InvalidRequestError("No certificate found for alias: " + alias);
+            }
+
+            keyStore.deleteEntry(alias);
+
+            keyStore.setCertificateEntry(alias, cert);
+
+            try (FileOutputStream fos = new FileOutputStream(certificateFilePath + "/" + keyStoreFile + ".jks")) {
+                keyStore.store(fos, keyStorePassword);
+            }
+        } catch (IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
+            log.error(e.getMessage());
+            throw new ServerError("Failed to remove private key for alias: " + alias, 500);
+        }
     }
 }

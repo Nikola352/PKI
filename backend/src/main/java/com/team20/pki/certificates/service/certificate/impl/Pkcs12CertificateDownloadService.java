@@ -2,6 +2,7 @@ package com.team20.pki.certificates.service.certificate.impl;
 
 import com.team20.pki.certificates.dto.CertificateDownloadRequestResponseDto;
 import com.team20.pki.certificates.dto.CertificateDownloadResponseDTO;
+import com.team20.pki.certificates.dto.DownloadCheckResponseDto;
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.CertificateDownloadRequest;
 import com.team20.pki.certificates.model.CertificateType;
@@ -12,6 +13,7 @@ import com.team20.pki.certificates.service.certificate.util.CertificateToPEMConv
 import com.team20.pki.certificates.service.certificate.util.KeyStorePasswordGenerator;
 import com.team20.pki.certificates.service.certificate.util.KeyStoreService;
 import com.team20.pki.certificates.service.certificate.util.PasswordStorage;
+import com.team20.pki.common.exception.InvalidRequestError;
 import com.team20.pki.common.exception.NotFoundError;
 import com.team20.pki.common.exception.ServerError;
 import com.team20.pki.encryption.service.EncryptionService;
@@ -79,9 +81,23 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
     }
 
     @Override
+    public DownloadCheckResponseDto checkDownloadAvailability(UUID id) {
+        Certificate certificate = certificateRepository.findById(id)
+                .orElseThrow(() -> new NotFoundError("Certificate not found"));
+
+        PrivateKey privateKey = loadPrivateKey(certificate);
+
+        return new DownloadCheckResponseDto(privateKey != null);
+    }
+
+    @Override
     public CertificateDownloadRequestResponseDto requestCertificateDownload(UUID certificateId) {
         Certificate certificate = certificateRepository.findById(certificateId)
                 .orElseThrow(() -> new NotFoundError("Certificate not found"));
+
+        if (loadPrivateKey(certificate) == null) {
+            throw new InvalidRequestError("Private key not available");
+        }
 
         final String password = keyStorePasswordGenerator.generatePassword(16);
         final byte[] encryptedBytes = encryptionService.encrypt(
@@ -109,6 +125,10 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
 
         final X509Certificate cert = loadCertificate(certificate);
         final PrivateKey privateKey = loadPrivateKey(certificate);
+
+        if(privateKey == null) {
+            throw new InvalidRequestError("Private key not available");
+        }
 
         final CertificateDownloadRequest downloadRequest = downloadRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundError("Password expired"));
@@ -151,6 +171,11 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
             byte[] pkcs12Bytes = baos.toByteArray();
             String fileName = "certificate-" + certificate.getSerialNumber() + ".p12";
 
+            if (certificate.getType().equals(CertificateType.END_ENTITY)) {
+                // delete private key for end entity certificate after first download
+                deletePrivateKey(certificate);
+            }
+
             return new CertificateDownloadResponseDTO(pkcs12Bytes, fileName);
 
         } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException e) {
@@ -184,8 +209,15 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
         return keyStoreService.readCertificate(serialNumber, keyStorePass.toCharArray(), serialNumber);
     }
 
+    private void deletePrivateKey(Certificate certificate) {
+        final String organization = certificate.getIssuer().getOrganization();
+        final String serialNumber = certificate.getSerialNumber();
+        final String keyStorePass = passwordStorage.loadKeyStorePassword(organization, serialNumber);
+        keyStoreService.removePrivateKey(serialNumber, keyStorePass.toCharArray(), serialNumber);
+    }
+
     @Scheduled(cron = "${certificate.download.delete-cron}")
-    public void clearExpiredTokens() {
+    public void clearExpiredRequests() {
         downloadRequestRepository.deleteAllExpired();
     }
 }

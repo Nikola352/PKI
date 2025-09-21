@@ -79,6 +79,12 @@ public class CertificatesController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{id}/download/check")
+    @PreAuthorize("@certificatePermissionEvaluator.canDownloadKeyPair(authentication, #id)")
+    public ResponseEntity<DownloadCheckResponseDto> checkCertificateDownloadAvailability(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(certificateDownloadService.checkDownloadAvailability(id));
+    }
+
     @GetMapping("/{id}/download/request")
     @PreAuthorize("@certificatePermissionEvaluator.canDownloadKeyPair(authentication, #id)")
     public ResponseEntity<CertificateDownloadRequestResponseDto> requestCertificateDownload(@PathVariable("id") UUID id) {
