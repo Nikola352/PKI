@@ -10,7 +10,8 @@ public record CAUserGetAllResponse(
         String organization,
         int issuedCertificates,
         int activeCertificates,
-        List<Certificate> certificates
+        List<Certificate> certificates,
+        String role
 ) {
     public record Certificate(
             UUID id,

@@ -1,9 +1,11 @@
 package com.team20.pki.certificates.service.certificate.util;
 
 import com.team20.pki.certificates.model.Certificate;
+import com.team20.pki.certificates.model.CertificateType;
 import com.team20.pki.certificates.model.Subject;
 import com.team20.pki.common.exception.ServerError;
 import com.team20.pki.common.model.User;
+import com.team20.pki.util.ExtensionUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
@@ -14,6 +16,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -27,14 +30,32 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class CertificateGenerator {
+    private final ExtensionUtils extensionUtils;
+
     public CertificateGenerator() {
         Security.addProvider(new BouncyCastleProvider());
+        extensionUtils = new ExtensionUtils();
     }
 
-    public X509Certificate generateCertificate(Subject subject, PrivateKey parentPrivateKey, Certificate parent, LocalDate startDate, LocalDate endDate, String serialNumber, PublicKey publicKey) {
+    public X509Certificate generateCertificate(
+            Subject subject,
+            PrivateKey parentPrivateKey,
+            Certificate parent,
+            LocalDate startDate,
+            LocalDate endDate,
+            String serialNumber,
+            PublicKey publicKey,
+            CertificateType type,
+            Integer maxLength,
+            List<String> keyUsage,
+            List<String> extendedKeyUsage) {
         JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption").setProvider("BC");
 
 
@@ -57,7 +78,17 @@ public class CertificateGenerator {
                     subjectName,
                     publicKey
             );
+            if (type.equals(CertificateType.END_ENTITY)) {
+                extensionUtils.addEndEntityBaseExtensions(certificateBuilder);
+            } else {
+                extensionUtils.addCertificateAuthorityBaseExtensions(certificateBuilder, maxLength);
+            }
+
+            List<String> updatedKeyUsage = concatenateBaseCaKeyUsage(type, keyUsage);
+            extensionUtils.addKeyUsageExtensions(certificateBuilder, updatedKeyUsage);
+            extensionUtils.addExtendedKeyUsage(certificateBuilder, extendedKeyUsage);
             // if the parent certificate
+
             String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
@@ -80,9 +111,17 @@ public class CertificateGenerator {
 
     }
 
+    private List<String> concatenateBaseCaKeyUsage(CertificateType type, List<String> keyUsage) {
+        List<String> updatedKeyUsage = keyUsage.stream().toList();
+        if (!type.equals(CertificateType.END_ENTITY))
+            updatedKeyUsage = Stream.concat(updatedKeyUsage.stream(), Stream.of("keyCertSign", "cRLSign")).distinct().toList();
+        return updatedKeyUsage;
+    }
+
     public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
 
-        try {;
+        try {
+            ;
             X500Name subjectName = subject.toX500Name();
             X500Name issuerName = subjectName;
 
@@ -102,6 +141,8 @@ public class CertificateGenerator {
                     keyPair.getPublic()
             );
 
+            extensionUtils.addCertificateAuthorityBaseExtensions(certBuilder, null);
+
             String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + owner.getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
@@ -120,35 +161,5 @@ public class CertificateGenerator {
             throw new ServerError("Could not create certificate", 500);
         }
 
-    }
-
-
-    public static PrivateKey decryptPrivateKey(byte[] encryptedKey, SecretKey encryptionKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        byte[] iv = new byte[12]; // Initialization vector
-        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-        cipher.init(Cipher.DECRYPT_MODE, encryptionKey, spec);
-        byte[] decryptedKey = cipher.doFinal(encryptedKey);
-        // Convert decrypted bytes back to PrivateKey
-        // This depends on the key algorithm used
-        return null; // Placeholder
-    }
-
-    public static SecretKey generateAESKey() throws NoSuchAlgorithmException {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        keyGenerator.init(256); // Specify key size (128, 192, or 256 bits)
-        return keyGenerator.generateKey();
-    }
-
-    public KeyPair generateKeyPair() {
-        try {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
-            keyGen.initialize(2048, random);
-            return keyGen.generateKeyPair();
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }

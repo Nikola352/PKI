@@ -157,7 +157,7 @@ export const IssueSelfSigned: React.FC = () => {
         `/api/certificates/check-root/${caId}`
       )
       .then((res) => {
-        if (res.data.rootExists || !res.data.isRegularUser)
+        if (!res.data.isRegularUser)
           api
             .get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`)
             .then((res) => {
@@ -199,7 +199,7 @@ export const IssueSelfSigned: React.FC = () => {
         validTo: getOneYearFromNow(),
       });
       setValidationErrors({});
-      navigate("/view-users");
+      navigate("/view-users", { replace: true });
     },
     onError: (error) => {
       console.error("Error creating certificate:", error);

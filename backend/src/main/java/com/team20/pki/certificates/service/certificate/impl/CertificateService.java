@@ -20,6 +20,7 @@ import com.team20.pki.common.exception.InvalidRequestError;
 import com.team20.pki.common.exception.NotFoundError;
 import com.team20.pki.common.model.User;
 import com.team20.pki.common.repository.UserRepository;
+import com.team20.pki.util.ExtensionUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,11 +76,10 @@ public class CertificateService implements ICertificateService {
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
 
 
-        String dateStr = "2025-09-20";
         User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new NotFoundError("User not found"));
-        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
-        if(rootExists)
-            throw new InvalidRequestError("Cannot issue another root!");
+//        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
+//        if (rootExists)
+//            throw new InvalidRequestError("Cannot issue another root!");
 
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
         Subject subject = new Subject(name);
@@ -117,6 +117,10 @@ public class CertificateService implements ICertificateService {
         Subject subject = new Subject(subjectName);
         CertificateType certificateType = declareCertificateType(subjectUser.getRole());
 
+        if (certificateType.equals(CertificateType.END_ENTITY) && dto.maxLength() != null)
+            throw new InvalidRequestError("End entity generation request cannot contain path length");
+
+
         BigInteger serialNumber = generateSerialNumber();
 
         LocalDate today = LocalDate.now();
@@ -130,7 +134,19 @@ public class CertificateService implements ICertificateService {
 
         User user = userRepository.findById(dto.subjectId()).orElseThrow(EntityNotFoundException::new);
 
-        X509Certificate cert = generator.generateCertificate(subject, parentPrivateKey, caCertificate, today, withDays, serialNumber.toString(), keyPair.getPublic());
+        X509Certificate cert = generator.generateCertificate(
+                subject,
+                parentPrivateKey,
+                caCertificate,
+                today,
+                withDays,
+                serialNumber.toString(),
+                keyPair.getPublic(),
+                certificateType,
+                dto.maxLength(),
+                dto.keyUsage(),
+                dto.extendedKeyUsage()
+        );
 
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
@@ -138,9 +154,10 @@ public class CertificateService implements ICertificateService {
                 today,
                 withDays,
                 caCertificate,
-                caCertificate.getIssuer()
-                , subject,
-                user);
+                caCertificate.getIssuer(),
+                subject,
+                user
+        );
 
         persistCertificate(dto.o(), keyPair, cert, certificate);
         return new CertificateCaSignResponseDTO(certificate.getId());
@@ -337,7 +354,11 @@ public class CertificateService implements ICertificateService {
                 today,
                 withDays,
                 serialNumber.toString(),
-                converter.getPublicKey(pkInfo)
+                converter.getPublicKey(pkInfo),
+                certificateType,
+                null,
+                List.of(),
+                List.of()
         );
 
         Certificate certificate = certificateFactory.createCertificate(

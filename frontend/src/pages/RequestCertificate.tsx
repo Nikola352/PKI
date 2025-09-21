@@ -3,9 +3,20 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as yup from "yup";
 import api from "@/api/axios-config";
 import { useNavigate, useParams } from "react-router";
+import {
+  keyUsageOptions as keyUsageOptionCa,
+  extendedKeyUsageOptions as extendedKeyUsageOptionsCa,
+} from "@/model/ca.certificate.extenstions";
+import {
+  keyUsageOptions as keyUsageOptionEE,
+  extendedKeyUsageOptions as extendedKeyUsageOptionsEE,
+} from "@/model/end.entity.certificate.extensions";
+import { Key, ChevronDown, Shield, ShieldCheck } from "lucide-react";
+import type { UserRole } from "@/model/user";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 interface CAUser {
+  role: UserRole;
   id: string;
   firstName: string;
   lastName: string;
@@ -21,6 +32,7 @@ interface CertificateAuthority {
   defaultValidityDays: number;
   requiredFields: string[];
   optionalFields: string[];
+  maxLength?: number;
 }
 const allRdns: Array<keyof CertificateRequestData> = [
   "cn",
@@ -31,7 +43,6 @@ const allRdns: Array<keyof CertificateRequestData> = [
   "l",
   "street",
   "emailAddress",
-  "serialNumber",
   "title",
   "givenName",
   "surname",
@@ -50,7 +61,6 @@ interface CertificateRequestData {
   l: string; // Locality/City
   street: string; // Street Address
   emailAddress: string; // Email Address
-  serialNumber: string; // Serial Number
   title: string; // Title
   givenName: string; // Given Name
   surname: string; // Surname
@@ -58,6 +68,9 @@ interface CertificateRequestData {
   pseudonym: string; // Pseudonym
   generationQualifier: string; // Generation Qualifier
   validityDays: number; // Certificate validity in days
+  keyUsage: string[];
+  extendedKeyUsage: string[];
+  maxLength?: number | null;
 }
 
 interface FormErrors {
@@ -90,7 +103,6 @@ const fetchCertificateAuthorities = async (
     ),
   }));
 };
-
 export const RequestCACertificate: React.FC = () => {
   const navigate = useNavigate();
   const { caId } = useParams();
@@ -101,6 +113,13 @@ export const RequestCACertificate: React.FC = () => {
     if (!caId) return;
     api.get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`).then((res) => {
       setCaUser(res.data);
+      if (res.data.role !== "REGULAR_USER") {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsCa]);
+        setKeyUsageOptions([...keyUsageOptionCa]);
+      } else {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsEE]);
+        setKeyUsageOptions([...keyUsageOptionEE]);
+      }
     });
   }, []);
   const [caUser, setCaUser] = useState<CAUser | null>(null);
@@ -115,16 +134,22 @@ export const RequestCACertificate: React.FC = () => {
     l: "",
     street: "",
     emailAddress: "",
-    serialNumber: "",
     title: "",
     givenName: "",
     surname: "",
     initials: "",
     pseudonym: "",
+    keyUsage: [],
+    extendedKeyUsage: [],
     generationQualifier: "",
     validityDays: 365,
+    maxLength: null,
   });
+  const [keyUsageOptions, setKeyUsageOptions] = useState<any[]>([]);
 
+  const [extendedKeyUsageOptions, setExtendedKeyUsageOptions] = useState<any[]>(
+    []
+  );
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
     yup.object()
@@ -138,7 +163,7 @@ export const RequestCACertificate: React.FC = () => {
   });
   useEffect(() => {
     if (certificateAuthorities && certificateAuthorities.length === 0)
-      navigate("/issue-self-signed/" + caId);
+      navigate("/issue-self-signed/" + caId, { replace: true });
   }, [certificateAuthorities, navigate]);
   // Update form when CA is selected
   useEffect(() => {
@@ -358,7 +383,6 @@ export const RequestCACertificate: React.FC = () => {
         l: "",
         street: "",
         emailAddress: "",
-        serialNumber: "",
         title: "",
         givenName: "",
         surname: "",
@@ -366,6 +390,9 @@ export const RequestCACertificate: React.FC = () => {
         pseudonym: "",
         generationQualifier: "",
         validityDays: 365,
+        extendedKeyUsage: [],
+        keyUsage: [],
+        maxLength: null,
       });
       setSelectedCA(null);
       setValidationErrors({});
@@ -381,7 +408,24 @@ export const RequestCACertificate: React.FC = () => {
     setSelectedCA(ca);
     setValidationErrors({});
   };
-
+  const [isKeyUsageAccordionOpen, setIsKeyUsageAccordionOpen] = useState(false);
+  const handleKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      keyUsage: checked
+        ? [...prev.keyUsage, value]
+        : prev.keyUsage.filter((usage) => usage !== value),
+    }));
+  };
+  // Handle Extended Key Usage changes
+  const handleExtendedKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      extendedKeyUsage: checked
+        ? [...prev.extendedKeyUsage, value]
+        : prev.extendedKeyUsage.filter((usage) => usage !== value),
+    }));
+  };
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ): void => {
@@ -464,6 +508,26 @@ export const RequestCACertificate: React.FC = () => {
     );
   };
 
+  const [enableMaxLength, setEnableMaxLength] = useState<boolean>(false);
+
+  const handleMaxLengthEnabledChange = (checked: boolean) => {
+    setEnableMaxLength(checked);
+    if (!checked) {
+      setFormData((prev) => ({
+        ...prev,
+        maxLength: null,
+      }));
+    }
+  };
+
+  // Handle Max Length value change
+  const handleMaxLengthChange = (value: string) => {
+    const numValue = value === "" ? null : Number(value);
+    setFormData((prev) => ({
+      ...prev,
+      maxLength: numValue,
+    }));
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       {caUser && (
@@ -604,6 +668,183 @@ export const RequestCACertificate: React.FC = () => {
                         )}
                       </div>
                     </div>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg border border-slate-600">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIsKeyUsageAccordionOpen(!isKeyUsageAccordionOpen)
+                      }
+                      className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-lg"
+                    >
+                      <div className="flex items-center">
+                        <Key className="w-5 h-5 text-blue-400 mr-3" />
+                        <span className="text-white font-medium">
+                          Extensions and Key Usage settings
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-white transition-transform duration-200 ${
+                          isKeyUsageAccordionOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isKeyUsageAccordionOpen && (
+                      <div className="px-6 pb-6">
+                        {caUser.role !== "REGULAR_USER" && (
+                          <div className="py-4">
+                            <div className="flex items-center mb-3">
+                              <input
+                                type="checkbox"
+                                id="enableMaxLength"
+                                checked={enableMaxLength}
+                                onChange={(e) =>
+                                  handleMaxLengthEnabledChange(e.target.checked)
+                                }
+                                className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                              />
+                              <label
+                                htmlFor="enableMaxLength"
+                                className="text-white font-medium cursor-pointer"
+                              >
+                                Enable Max Length Constraint
+                              </label>
+                            </div>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Set maximum length constraint for the certificate
+                              path
+                            </p>
+
+                            {enableMaxLength && (
+                              <div>
+                                <label
+                                  htmlFor="maxLength"
+                                  className={labelClasses}
+                                >
+                                  Max Length
+                                </label>
+                                <input
+                                  type="number"
+                                  id="maxLength"
+                                  name="maxLength"
+                                  value={formData.maxLength || ""}
+                                  onChange={(e) =>
+                                    handleMaxLengthChange(e.target.value)
+                                  }
+                                  min="0"
+                                  placeholder="e.g., 3"
+                                  className={inputClasses("maxLength")}
+                                />
+                                <p className="text-slate-400 text-xs mt-1">
+                                  Maximum number of non-self-issued intermediate
+                                  certificates
+                                </p>
+                                {validationErrors.maxLength && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.maxLength}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="border-t border-slate-600 pt-4">
+                          {/* Key Usage */}
+                          <div className="mb-6">
+                            <h4 className="text-white font-medium mb-3 flex items-center">
+                              <Shield className="w-4 h-4 mr-2 text-blue-400" />
+                              Key Usage{" "}
+                              <span className="text-red-400 ml-1">*</span>
+                            </h4>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Select how this certificate key can be used
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {keyUsageOptions.map((option) => (
+                                <label
+                                  key={option.value}
+                                  className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.keyUsage.includes(
+                                      option.value
+                                    )}
+                                    onChange={(e) =>
+                                      handleKeyUsageChange(
+                                        option.value,
+                                        e.target.checked
+                                      )
+                                    }
+                                    className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-white text-sm font-medium block">
+                                      {option.label}
+                                    </span>
+                                    <span className="text-slate-300 text-xs">
+                                      {option.description}
+                                    </span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                            {validationErrors.keyUsage && (
+                              <p className={errorClasses}>
+                                {validationErrors.keyUsage}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Extended Key Usage */}
+                          <div>
+                            <h4 className="text-white font-medium mb-3 flex items-center">
+                              <ShieldCheck className="w-4 h-4 mr-2 text-blue-400" />
+                              Extended Key Usage{" "}
+                            </h4>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Select specific purposes for this certificate
+                            </p>
+                            <div className="grid grid-cols-1 gap-3">
+                              {extendedKeyUsageOptions.map((option) => (
+                                <label
+                                  key={option.value}
+                                  className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.extendedKeyUsage.includes(
+                                      option.value
+                                    )}
+                                    onChange={(e) =>
+                                      handleExtendedKeyUsageChange(
+                                        option.value,
+                                        e.target.checked
+                                      )
+                                    }
+                                    className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-white text-sm font-medium block">
+                                      {option.label}
+                                    </span>
+                                    <span className="text-slate-300 text-xs">
+                                      {option.description}
+                                    </span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                            {validationErrors.extendedKeyUsage && (
+                              <p className={errorClasses}>
+                                {validationErrors.extendedKeyUsage}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Subject Information */}
@@ -943,33 +1184,6 @@ export const RequestCACertificate: React.FC = () => {
                               </div>
                             )}
 
-                            {selectedCA.optionalFields.includes(
-                              "serialNumber"
-                            ) && (
-                              <div>
-                                <label
-                                  htmlFor="serialNumber"
-                                  className={labelClasses}
-                                >
-                                  Serial Number
-                                </label>
-                                <input
-                                  type="text"
-                                  id="serialNumber"
-                                  name="serialNumber"
-                                  value={formData.serialNumber}
-                                  onChange={handleInputChange}
-                                  placeholder="e.g., 123456789"
-                                  className={inputClasses("serialNumber")}
-                                />
-                                {validationErrors.serialNumber && (
-                                  <p className={errorClasses}>
-                                    {validationErrors.serialNumber}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
                             {selectedCA.optionalFields.includes("initials") && (
                               <div>
                                 <label
@@ -1088,7 +1302,7 @@ export const RequestCACertificate: React.FC = () => {
                           {/* {selectedCA?.policies.requiresApproval
                           ? "Submitting Request..."
                           : "Creating Certificate..."} */}
-                          "Submitting..."
+                          Submitting...
                         </div>
                       ) : (
                         <>
@@ -1096,7 +1310,7 @@ export const RequestCACertificate: React.FC = () => {
                           ? "Submit Certificate Request"
                           : "Request Certificate"}
                         {selectedCA?.policies.autoIssue && " (Auto-Approved)"} */}
-                          "Create cert"
+                          Generate certificate
                         </>
                       )}
                     </button>

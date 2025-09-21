@@ -48,7 +48,9 @@ public class UserService implements IUserService {
                     user.getEmail(),
                     user.getOrganization(),
                     userCertificates.size(),
-                    userCertificates);
+                    userCertificates,
+                    user.getRole().toString()
+                    );
         }).toList();
     }
 

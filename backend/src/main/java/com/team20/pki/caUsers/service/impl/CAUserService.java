@@ -39,7 +39,9 @@ public class CAUserService implements ICAUserService {
                     user.getOrganization(),
                     issuedByUserCound,
                     userCertificates.size(),
-                    userCertificates);
+                    userCertificates,
+                    user.getRole().toString()
+                    );
         }).toList();
     }
 
