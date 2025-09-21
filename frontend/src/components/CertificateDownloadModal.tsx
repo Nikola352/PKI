@@ -12,6 +12,7 @@ import {
   Loader2,
   Shield,
   Key,
+  Link,
 } from "lucide-react";
 
 interface CertificateDownloadRequestResponseDto {
@@ -31,6 +32,7 @@ export const CertificateDownloadModal: React.FC<
 > = ({ isOpen, onClose, certificateId, certificateName = "Certificate" }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordCopied, setPasswordCopied] = useState(false);
+  const [includeChain, setIncludeChain] = useState(true);
   const [downloadResponse, setDownloadResponse] =
     useState<CertificateDownloadRequestResponseDto | null>(null);
 
@@ -57,7 +59,12 @@ export const CertificateDownloadModal: React.FC<
     mutationFn: async (requestId: string) => {
       const response = await api.get(
         `/api/certificates/${certificateId}/download/${requestId}`,
-        { responseType: "blob" }
+        {
+          responseType: "blob",
+          params: {
+            includeChain: includeChain,
+          },
+        }
       );
 
       // Create download link
@@ -103,6 +110,7 @@ export const CertificateDownloadModal: React.FC<
     setDownloadResponse(null);
     setShowPassword(false);
     setPasswordCopied(false);
+    setIncludeChain(true);
     requestDownloadMutation.reset();
     downloadFileMutation.reset();
     onClose();
@@ -222,7 +230,7 @@ export const CertificateDownloadModal: React.FC<
                 </div>
 
                 {/* Password Display */}
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
                   <div className="flex items-center text-yellow-400 text-sm mb-3">
                     <Key className="w-4 h-4 mr-2" />
                     <span className="font-medium">Certificate Password</span>
@@ -268,6 +276,33 @@ export const CertificateDownloadModal: React.FC<
                     ⚠️ This password will not be shown again. Make sure to save
                     it securely!
                   </p>
+                </div>
+
+                {/* Certificate Chain Option */}
+                <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4 mb-6">
+                  <label className="flex items-start cursor-pointer">
+                    <div className="flex items-center h-5">
+                      <input
+                        type="checkbox"
+                        checked={includeChain}
+                        onChange={(e) => setIncludeChain(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2 focus:ring-offset-slate-800"
+                      />
+                    </div>
+                    <div className="ml-3">
+                      <div className="flex items-center text-slate-300 text-sm mb-1">
+                        <Link className="w-4 h-4 mr-2" />
+                        <span className="font-medium">
+                          Include certificate chain
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-xs">
+                        {includeChain
+                          ? "Download the complete certificate chain including intermediate and root certificates"
+                          : "Download only this certificate without the chain"}
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Download Button */}

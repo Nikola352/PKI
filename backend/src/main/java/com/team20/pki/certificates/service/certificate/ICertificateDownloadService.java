@@ -8,7 +8,7 @@ import java.util.UUID;
 public interface ICertificateDownloadService {
     CertificateDownloadResponseDTO downloadCertificatePem(UUID certificateId);
 
-    CertificateDownloadResponseDTO downloadCertificate(UUID certificateId, UUID requestId);
+    CertificateDownloadResponseDTO downloadCertificate(UUID certificateId, UUID requestId, Boolean includeChain);
 
     CertificateDownloadRequestResponseDto requestCertificateDownload(UUID certificateId);
 }

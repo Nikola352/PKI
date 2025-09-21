@@ -4,6 +4,7 @@ import com.team20.pki.certificates.dto.CertificateDownloadRequestResponseDto;
 import com.team20.pki.certificates.dto.CertificateDownloadResponseDTO;
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.model.CertificateDownloadRequest;
+import com.team20.pki.certificates.model.CertificateType;
 import com.team20.pki.certificates.repository.CertificateDownloadRequestRepository;
 import com.team20.pki.certificates.repository.ICertificateRepository;
 import com.team20.pki.certificates.service.certificate.ICertificateDownloadService;
@@ -33,7 +34,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -100,7 +103,7 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
 
     @Override
     @Transactional
-    public CertificateDownloadResponseDTO downloadCertificate(UUID certificateId, UUID requestId) {
+    public CertificateDownloadResponseDTO downloadCertificate(UUID certificateId, UUID requestId, Boolean includeChain) {
         final Certificate certificate = certificateRepository.findById(certificateId)
                 .orElseThrow(() -> new NotFoundError("Certificate not found"));
 
@@ -124,6 +127,12 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
 
         downloadRequestRepository.delete(downloadRequest);
 
+        X509Certificate[] certificates = new X509Certificate[] {cert};
+        if (includeChain) {
+            certificates = getCertificateChain(certificate)
+                    .stream().map(this::loadCertificate).toList().toArray(new X509Certificate[0]);
+        }
+
         try {
             KeyStore pkcs12 = KeyStore.getInstance("PKCS12");
             pkcs12.load(null, null);
@@ -132,7 +141,7 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
                     "key",
                     privateKey,
                     password.toCharArray(),
-                    new X509Certificate[]{cert}
+                    certificates
             );
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -148,6 +157,16 @@ public class Pkcs12CertificateDownloadService implements ICertificateDownloadSer
             log.error(e.getMessage());
             throw new ServerError("Failed to create PKCS12 file", 500);
         }
+    }
+
+    private List<Certificate> getCertificateChain(Certificate certificate) {
+        List<Certificate> certificates = new ArrayList<>();
+        certificates.add(certificate);
+        while (!certificate.getType().equals(CertificateType.ROOT) && certificate.getParent() != null) {
+            certificate = certificate.getParent();
+            certificates.add(certificate);
+        }
+        return certificates;
     }
 
     private PrivateKey loadPrivateKey(Certificate certificate) {
