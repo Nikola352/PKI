@@ -6,6 +6,7 @@ import api from "@/api/axios-config";
 import { UserContext } from "@/context/UserContext";
 import FileUpload from "@/components/FileUpload";
 import { CertificateDownloadModal } from "@/components/CertificateDownloadModal";
+import { X } from "lucide-react";
 const { VITE_API_BASE_URL } = import.meta.env;
 
 interface CertificateAuthority {
@@ -141,6 +142,9 @@ export const EndEntityCertificateForm: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
     yup.object()
+  );
+  const [lastStatus, setLastStatus] = useState<"success" | "error" | null>(
+    null
   );
 
   // Fetch available CAs
@@ -299,7 +303,28 @@ export const EndEntityCertificateForm: React.FC = () => {
       setValidationErrors({});
       await certificateApi.downloadPem(data.certificateId);
     },
+    onError: () => {
+      console.log("Error");
+    },
   });
+  useEffect(() => {
+    if (
+      createCertificateRequestMutation.isSuccess ||
+      createExternalCertificateRequestMutation.isSuccess
+    ) {
+      setLastStatus("success");
+    } else if (
+      createCertificateRequestMutation.isError ||
+      createExternalCertificateRequestMutation.isError
+    ) {
+      setLastStatus("error");
+    }
+  }, [
+    createCertificateRequestMutation.isSuccess,
+    createExternalCertificateRequestMutation.isSuccess,
+    createCertificateRequestMutation.isError,
+    createExternalCertificateRequestMutation.isError,
+  ]);
   const validateExternalForm = () => {
     const errors: FormErrors = {};
 
@@ -439,7 +464,7 @@ export const EndEntityCertificateForm: React.FC = () => {
               </p>
             </div>
 
-            {createCertificateRequestMutation.isSuccess && (
+            {lastStatus === "success" ? (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center">
                   <svg
@@ -458,7 +483,18 @@ export const EndEntityCertificateForm: React.FC = () => {
                   </p>
                 </div>
               </div>
-            )}
+            ) : lastStatus === "error" ? (
+              <div className="mb-6 p-4 bg-green-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <div className="inline-flex items-center justify-center w-5 h-5 bg-red-600 rounded-full mr-3">
+                    <X className="w-4 h-4 text-red-50" />
+                  </div>
+                  <p className="text-red-700 font-medium">
+                    Certificate request creation failed!
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-6">
               {/* CA Selection */}
