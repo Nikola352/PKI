@@ -18,6 +18,7 @@ import {
 
 import api from "@/api/axios-config";
 import { useNavigate } from "react-router";
+import type { UserRole } from "@/model/user";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 
@@ -35,7 +36,7 @@ interface CAUser {
   name: string;
   email: string;
   organization: string;
-  role: string;
+  role: UserRole;
   issuedCertificates: number;
   activeCertificates: number;
   certificates: Certificate[];
@@ -46,7 +47,7 @@ interface RegularUser {
   name: string;
   email: string;
   organization: string;
-  role: string;
+  role: UserRole;
   activeCertificates: number;
   certificates: Certificate[];
 }
@@ -167,16 +168,19 @@ const UserManagementPage: React.FC = () => {
   const isCAUser = (user: CAUser | RegularUser): user is CAUser => {
     return "issuedCertificates" in user;
   };
-
+  useEffect(() => console.log(selectedUser), [selectedUser]);
   const handleInvite = () => {
     navigate("/invite");
   };
 
-  function handleNavigateToCertificateIssuing(): void {
+  const handleNavigateToCertificateIssuing = () => {
     if (!selectedUser) return;
     navigate("/issue/" + selectedUser.id);
-  }
-
+  };
+  const handleNavigateToRootIssuing = () => {
+    if (!selectedUser) return;
+    navigate("/issue-self-signed/" + selectedUser.id);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 relative overflow-hidden">
       {/* Background decorative elements */}
@@ -371,6 +375,15 @@ const UserManagementPage: React.FC = () => {
                     >
                       Issue Certificate
                     </button>
+                    {selectedUser.role !== "REGULAR_USER" && (
+                      <button
+                        type="button"
+                        onClick={handleNavigateToRootIssuing}
+                        className="py-2 px-3 me-2 my-2 ms-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 rounded-lg p-4 text-white"
+                      >
+                        Issue Root
+                      </button>
+                    )}
                   </div>
                 </div>
 

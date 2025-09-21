@@ -76,7 +76,6 @@ public class CertificateService implements ICertificateService {
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
 
 
-        String dateStr = "2025-09-20";
         User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new NotFoundError("User not found"));
 //        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
 //        if (rootExists)
@@ -155,9 +154,10 @@ public class CertificateService implements ICertificateService {
                 today,
                 withDays,
                 caCertificate,
-                caCertificate.getIssuer()
-                , subject,
-                user);
+                caCertificate.getIssuer(),
+                subject,
+                user
+        );
 
         persistCertificate(dto.o(), keyPair, cert, certificate);
         return new CertificateCaSignResponseDTO(certificate.getId());

@@ -163,7 +163,7 @@ export const RequestCACertificate: React.FC = () => {
   });
   useEffect(() => {
     if (certificateAuthorities && certificateAuthorities.length === 0)
-      navigate("/issue-self-signed/" + caId);
+      navigate("/issue-self-signed/" + caId, { replace: true });
   }, [certificateAuthorities, navigate]);
   // Update form when CA is selected
   useEffect(() => {
@@ -1302,7 +1302,7 @@ export const RequestCACertificate: React.FC = () => {
                           {/* {selectedCA?.policies.requiresApproval
                           ? "Submitting Request..."
                           : "Creating Certificate..."} */}
-                          "Submitting..."
+                          Submitting...
                         </div>
                       ) : (
                         <>
@@ -1310,7 +1310,7 @@ export const RequestCACertificate: React.FC = () => {
                           ? "Submit Certificate Request"
                           : "Request Certificate"}
                         {selectedCA?.policies.autoIssue && " (Auto-Approved)"} */}
-                          "Create cert"
+                          Generate certificate
                         </>
                       )}
                     </button>
