@@ -28,7 +28,7 @@ import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -71,6 +71,7 @@ public class CertificateService implements ICertificateService {
     private final ICertificateFactory certificateFactory;
     private final PasswordStorage passwordStorage;
     private final CertificateMapper certificateMapper;
+    private final ExtensionUtils extensionUtils = new ExtensionUtils();
 
     @Transactional
     public CertificateSelfSignResponseDTO generateSelfSignedCertificate(SelfSignSubjectDataDTO selfSignSubjectDataDTO) throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException {
@@ -354,6 +355,14 @@ public class CertificateService implements ICertificateService {
         SubjectPublicKeyInfo pkInfo = csrCertificate.getSubjectPublicKeyInfo();
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 
+        Extensions extensions = csrCertificate.getRequestedExtensions();
+
+        KeyUsage keyUsage = KeyUsage.fromExtensions(extensions);
+        ExtendedKeyUsage extendedKeyUsage = ExtendedKeyUsage.fromExtensions(extensions);
+        List<String> keyUsagesList = extensionUtils.getUsagesFromBits(keyUsage);
+        List<String> extendedKeyUsagesList = extensionUtils.getExtendedUsagesFromBits(extendedKeyUsage);
+
+
         X509Certificate cert = generator.generateCertificate(
                 subject,
                 parentPrivateKey,
@@ -364,8 +373,8 @@ public class CertificateService implements ICertificateService {
                 converter.getPublicKey(pkInfo),
                 certificateType,
                 null,
-                List.of(),
-                List.of()
+                keyUsagesList,
+                extendedKeyUsagesList
         );
 
         Certificate certificate = certificateFactory.createCertificate(

@@ -116,6 +116,73 @@ public class ExtensionUtils {
         return keyUsageBits;
     }
 
+    public List<String> getUsagesFromBits(KeyUsage keyUsage) {
+        List<String> keyUsageList = new ArrayList<>();
+
+        if (keyUsage.hasUsages(KeyUsage.digitalSignature)) {
+            keyUsageList.add("digitalSignature");
+        }
+        if (keyUsage.hasUsages(KeyUsage.nonRepudiation)) {
+            keyUsageList.add("nonRepudiation");
+        }
+        if (keyUsage.hasUsages(KeyUsage.keyEncipherment)) {
+            keyUsageList.add("keyEncipherment");
+        }
+        if (keyUsage.hasUsages(KeyUsage.dataEncipherment)) {
+            keyUsageList.add("dataEncipherment");
+        }
+        if (keyUsage.hasUsages(KeyUsage.keyAgreement)) {
+            keyUsageList.add("keyAgreement");
+        }
+        if (keyUsage.hasUsages(KeyUsage.keyCertSign)) {
+            keyUsageList.add("keyCertSign");
+        }
+        if (keyUsage.hasUsages(KeyUsage.cRLSign)) {
+            keyUsageList.add("cRLSign");
+        }
+        if (keyUsage.hasUsages(KeyUsage.encipherOnly)) {
+            keyUsageList.add("encipherOnly");
+        }
+        if (keyUsage.hasUsages(KeyUsage.decipherOnly)) {
+            keyUsageList.add("decipherOnly");
+        }
+
+        return keyUsageList;
+    }
+
+
+    public List<String> getExtendedUsagesFromBits(ExtendedKeyUsage extendedKeyUsage) {
+        List<String> extendedKeyUsageList = new ArrayList<>();
+
+        for (KeyPurposeId kid : extendedKeyUsage.getUsages()) {
+            switch (kid.getId()) {
+                case "1.3.6.1.5.5.7.3.1":
+                    extendedKeyUsageList.add("serverAuth");
+                    break;
+                case "1.3.6.1.5.5.7.3.2":
+                    extendedKeyUsageList.add("clientAuth");
+                    break;
+                case "1.3.6.1.5.5.7.3.3":
+                    extendedKeyUsageList.add("codeSigning");
+                    break;
+                case "1.3.6.1.5.5.7.3.4":
+                    extendedKeyUsageList.add("emailProtection");
+                    break;
+                case "1.3.6.1.5.5.7.3.8":
+                    extendedKeyUsageList.add("timeStamping");
+                    break;
+                case "1.3.6.1.5.5.7.3.9":
+                    extendedKeyUsageList.add("OCSPSigning");
+                    break;
+                default:
+                    extendedKeyUsageList.add("unknown(" + kid.getId() + ")");
+            }
+        }
+
+        return extendedKeyUsageList;
+    }
+
+
     public void addEndEntityBaseExtensions(JcaX509v3CertificateBuilder builder) throws CertIOException {
         builder.addExtension(
                 Extension.basicConstraints,
