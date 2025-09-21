@@ -24,8 +24,8 @@ public class CertificateRevocationList {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CA_id", nullable = false, unique = true)
-    private User user;
+    @JoinColumn(name = "CA_certificate_id", nullable = false, unique = true)
+    private Certificate CACertificate;
 
     @Lob
     @Column(nullable = false)

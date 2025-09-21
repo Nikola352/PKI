@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class CertificateGenerator {
@@ -58,7 +59,7 @@ public class CertificateGenerator {
                     publicKey
             );
             // if the parent certificate
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
                     new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
@@ -80,7 +81,7 @@ public class CertificateGenerator {
 
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
+    public X509Certificate generateSelfSignedCertificate(UUID id, BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
 
         try {;
             X500Name subjectName = subject.toX500Name();
@@ -102,7 +103,7 @@ public class CertificateGenerator {
                     keyPair.getPublic()
             );
 
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + owner.getId();
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + id;
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
                     new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});

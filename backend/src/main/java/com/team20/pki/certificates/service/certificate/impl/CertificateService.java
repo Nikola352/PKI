@@ -93,8 +93,9 @@ public class CertificateService implements ICertificateService {
         if (from.isAfter(to))
             throw new InvalidRequestError("Certificate cannot last longer that its parent CA");
 
-        X509Certificate cert = generator.generateSelfSignedCertificate(serial, keyPair, user, from, to, subject);
+        UUID id = UUID.randomUUID();
         Certificate certificate = certificateFactory.createCertificate(
+                id,
                 CertificateType.ROOT,
                 serial.toString(),
                 from,
@@ -104,6 +105,7 @@ public class CertificateService implements ICertificateService {
                 new Subject(name),
                 user
         );
+        X509Certificate cert = generator.generateSelfSignedCertificate(id, serial, keyPair, user, from, to, subject);
         persistCertificate(selfSignSubjectDataDTO.o(), keyPair, cert, certificate);
         return new CertificateSelfSignResponseDTO(certificate.getId());
     }

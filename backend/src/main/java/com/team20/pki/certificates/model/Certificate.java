@@ -19,7 +19,6 @@ import java.util.UUID;
 @Table(name = "certificates")
 public class Certificate {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -49,4 +48,11 @@ public class Certificate {
 
     @Column(nullable = false)
     private Boolean isRevoked;
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+    }
 }

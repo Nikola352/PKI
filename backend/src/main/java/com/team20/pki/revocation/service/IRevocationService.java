@@ -13,5 +13,5 @@ import java.util.UUID;
 public interface IRevocationService {
     CertificateRevocationResponseDTO revokeCertificate(UUID certificateId, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException;
 
-    CRLResponseDTO getCertificateRevocationList(UUID certifiedAuthorityId);
+    CRLResponseDTO getCertificateRevocationList(UUID certifiedAuthorityId) throws GeneralSecurityException, IOException, OperatorCreationException;
 }
