@@ -149,14 +149,14 @@ public class CertificateService implements ICertificateService {
                 dto.keyUsage(),
                 dto.extendedKeyUsage()
         );
-
+        Issuer issuer = new Issuer(caCertificate.getSubject().toX500Name());
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
                 cert.getSerialNumber().toString(),
                 today,
                 withDays,
                 caCertificate,
-                caCertificate.getIssuer(),
+                issuer,
                 subject,
                 user
         );
