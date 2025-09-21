@@ -33,7 +33,8 @@ public class CertificatePermissionEvaluator {
 
         return switch (user.getUserRole()) {
             case REGULAR_USER -> certificate.getOwner().getId().equals(user.getUserId());
-            case CA_USER -> isInCaChain(certificate, user.getUserId());
+            case CA_USER ->
+                    isInCaChain(certificate, user.getUserId()) && !certificate.getType().equals(CertificateType.END_ENTITY);
             case ADMINISTRATOR -> !certificate.getType().equals(CertificateType.END_ENTITY);
         };
     }
