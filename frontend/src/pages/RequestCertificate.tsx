@@ -4,13 +4,19 @@ import * as yup from "yup";
 import api from "@/api/axios-config";
 import { useNavigate, useParams } from "react-router";
 import {
-  keyUsageOptions,
-  extendedKeyUsageOptions,
+  keyUsageOptions as keyUsageOptionCa,
+  extendedKeyUsageOptions as extendedKeyUsageOptionsCa,
 } from "@/model/ca.certificate.extenstions";
+import {
+  keyUsageOptions as keyUsageOptionEE,
+  extendedKeyUsageOptions as extendedKeyUsageOptionsEE,
+} from "@/model/end.entity.certificate.extensions";
 import { Key, ChevronDown, Shield, ShieldCheck } from "lucide-react";
+import type { UserRole } from "@/model/user";
 
 const { VITE_API_BASE_URL } = import.meta.env;
 interface CAUser {
+  role: UserRole;
   id: string;
   firstName: string;
   lastName: string;
@@ -26,6 +32,7 @@ interface CertificateAuthority {
   defaultValidityDays: number;
   requiredFields: string[];
   optionalFields: string[];
+  maxLength?: number;
 }
 const allRdns: Array<keyof CertificateRequestData> = [
   "cn",
@@ -36,7 +43,6 @@ const allRdns: Array<keyof CertificateRequestData> = [
   "l",
   "street",
   "emailAddress",
-  "serialNumber",
   "title",
   "givenName",
   "surname",
@@ -55,7 +61,6 @@ interface CertificateRequestData {
   l: string; // Locality/City
   street: string; // Street Address
   emailAddress: string; // Email Address
-  serialNumber: string; // Serial Number
   title: string; // Title
   givenName: string; // Given Name
   surname: string; // Surname
@@ -65,6 +70,7 @@ interface CertificateRequestData {
   validityDays: number; // Certificate validity in days
   keyUsage: string[];
   extendedKeyUsage: string[];
+  maxLength?: number | null;
 }
 
 interface FormErrors {
@@ -97,7 +103,6 @@ const fetchCertificateAuthorities = async (
     ),
   }));
 };
-
 export const RequestCACertificate: React.FC = () => {
   const navigate = useNavigate();
   const { caId } = useParams();
@@ -108,6 +113,13 @@ export const RequestCACertificate: React.FC = () => {
     if (!caId) return;
     api.get<CAUser>(`${VITE_API_BASE_URL}/api/users/${caId}`).then((res) => {
       setCaUser(res.data);
+      if (res.data.role !== "REGULAR_USER") {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsCa]);
+        setKeyUsageOptions([...keyUsageOptionCa]);
+      } else {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsEE]);
+        setKeyUsageOptions([...keyUsageOptionEE]);
+      }
     });
   }, []);
   const [caUser, setCaUser] = useState<CAUser | null>(null);
@@ -122,7 +134,6 @@ export const RequestCACertificate: React.FC = () => {
     l: "",
     street: "",
     emailAddress: "",
-    serialNumber: "",
     title: "",
     givenName: "",
     surname: "",
@@ -132,8 +143,13 @@ export const RequestCACertificate: React.FC = () => {
     extendedKeyUsage: [],
     generationQualifier: "",
     validityDays: 365,
+    maxLength: null,
   });
+  const [keyUsageOptions, setKeyUsageOptions] = useState<any[]>([]);
 
+  const [extendedKeyUsageOptions, setExtendedKeyUsageOptions] = useState<any[]>(
+    []
+  );
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
     yup.object()
@@ -367,7 +383,6 @@ export const RequestCACertificate: React.FC = () => {
         l: "",
         street: "",
         emailAddress: "",
-        serialNumber: "",
         title: "",
         givenName: "",
         surname: "",
@@ -377,6 +392,7 @@ export const RequestCACertificate: React.FC = () => {
         validityDays: 365,
         extendedKeyUsage: [],
         keyUsage: [],
+        maxLength: null,
       });
       setSelectedCA(null);
       setValidationErrors({});
@@ -401,7 +417,6 @@ export const RequestCACertificate: React.FC = () => {
         : prev.keyUsage.filter((usage) => usage !== value),
     }));
   };
-
   // Handle Extended Key Usage changes
   const handleExtendedKeyUsageChange = (value: string, checked: boolean) => {
     setFormData((prev) => ({
@@ -493,6 +508,26 @@ export const RequestCACertificate: React.FC = () => {
     );
   };
 
+  const [enableMaxLength, setEnableMaxLength] = useState<boolean>(false);
+
+  const handleMaxLengthEnabledChange = (checked: boolean) => {
+    setEnableMaxLength(checked);
+    if (!checked) {
+      setFormData((prev) => ({
+        ...prev,
+        maxLength: null,
+      }));
+    }
+  };
+
+  // Handle Max Length value change
+  const handleMaxLengthChange = (value: string) => {
+    const numValue = value === "" ? null : Number(value);
+    setFormData((prev) => ({
+      ...prev,
+      maxLength: numValue,
+    }));
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       {caUser && (
@@ -645,7 +680,7 @@ export const RequestCACertificate: React.FC = () => {
                       <div className="flex items-center">
                         <Key className="w-5 h-5 text-blue-400 mr-3" />
                         <span className="text-white font-medium">
-                          Key Usage Settings
+                          Extensions and Key Usage settings
                         </span>
                       </div>
                       <ChevronDown
@@ -657,6 +692,63 @@ export const RequestCACertificate: React.FC = () => {
 
                     {isKeyUsageAccordionOpen && (
                       <div className="px-6 pb-6">
+                        {caUser.role !== "REGULAR_USER" && (
+                          <div className="py-4">
+                            <div className="flex items-center mb-3">
+                              <input
+                                type="checkbox"
+                                id="enableMaxLength"
+                                checked={enableMaxLength}
+                                onChange={(e) =>
+                                  handleMaxLengthEnabledChange(e.target.checked)
+                                }
+                                className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                              />
+                              <label
+                                htmlFor="enableMaxLength"
+                                className="text-white font-medium cursor-pointer"
+                              >
+                                Enable Max Length Constraint
+                              </label>
+                            </div>
+                            <p className="text-slate-400 text-sm mb-4">
+                              Set maximum length constraint for the certificate
+                              path
+                            </p>
+
+                            {enableMaxLength && (
+                              <div>
+                                <label
+                                  htmlFor="maxLength"
+                                  className={labelClasses}
+                                >
+                                  Max Length
+                                </label>
+                                <input
+                                  type="number"
+                                  id="maxLength"
+                                  name="maxLength"
+                                  value={formData.maxLength || ""}
+                                  onChange={(e) =>
+                                    handleMaxLengthChange(e.target.value)
+                                  }
+                                  min="0"
+                                  placeholder="e.g., 3"
+                                  className={inputClasses("maxLength")}
+                                />
+                                <p className="text-slate-400 text-xs mt-1">
+                                  Maximum number of non-self-issued intermediate
+                                  certificates
+                                </p>
+                                {validationErrors.maxLength && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.maxLength}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className="border-t border-slate-600 pt-4">
                           {/* Key Usage */}
                           <div className="mb-6">
@@ -1087,33 +1179,6 @@ export const RequestCACertificate: React.FC = () => {
                                 {validationErrors.street && (
                                   <p className={errorClasses}>
                                     {validationErrors.street}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {selectedCA.optionalFields.includes(
-                              "serialNumber"
-                            ) && (
-                              <div>
-                                <label
-                                  htmlFor="serialNumber"
-                                  className={labelClasses}
-                                >
-                                  Serial Number
-                                </label>
-                                <input
-                                  type="text"
-                                  id="serialNumber"
-                                  name="serialNumber"
-                                  value={formData.serialNumber}
-                                  onChange={handleInputChange}
-                                  placeholder="e.g., 123456789"
-                                  className={inputClasses("serialNumber")}
-                                />
-                                {validationErrors.serialNumber && (
-                                  <p className={errorClasses}>
-                                    {validationErrors.serialNumber}
                                   </p>
                                 )}
                               </div>

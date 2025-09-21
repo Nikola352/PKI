@@ -78,9 +78,9 @@ public class CertificateService implements ICertificateService {
 
         String dateStr = "2025-09-20";
         User user = userRepository.findById(selfSignSubjectDataDTO.subjectId()).orElseThrow(() -> new NotFoundError("User not found"));
-        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
-        if(rootExists)
-            throw new InvalidRequestError("Cannot issue another root!");
+//        boolean rootExists = certificateRepository.existsRootCertificatesForOrganization(user.getOrganization());
+//        if (rootExists)
+//            throw new InvalidRequestError("Cannot issue another root!");
 
         X500Name name = x500NameService.createX500Name(selfSignSubjectDataDTO);
         Subject subject = new Subject(name);
@@ -118,6 +118,10 @@ public class CertificateService implements ICertificateService {
         Subject subject = new Subject(subjectName);
         CertificateType certificateType = declareCertificateType(subjectUser.getRole());
 
+        if (certificateType.equals(CertificateType.END_ENTITY) && dto.maxLength() != null)
+            throw new InvalidRequestError("End entity generation request cannot contain path length");
+
+
         BigInteger serialNumber = generateSerialNumber();
 
         LocalDate today = LocalDate.now();
@@ -140,9 +144,10 @@ public class CertificateService implements ICertificateService {
                 serialNumber.toString(),
                 keyPair.getPublic(),
                 certificateType,
+                dto.maxLength(),
                 dto.keyUsage(),
                 dto.extendedKeyUsage()
-                );
+        );
 
         Certificate certificate = certificateFactory.createCertificate(
                 certificateType,
@@ -351,6 +356,7 @@ public class CertificateService implements ICertificateService {
                 serialNumber.toString(),
                 converter.getPublicKey(pkInfo),
                 certificateType,
+                null,
                 List.of(),
                 List.of()
         );

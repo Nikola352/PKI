@@ -21,6 +21,7 @@ public record CaSignSubjectDataDTO(UUID caId,
                                    String initials,
                                    String pseudonym,
                                    String generationQualifier,
+                                   Integer maxLength,
                                    List<String> keyUsage,
                                    List<String> extendedKeyUsage
 ) {

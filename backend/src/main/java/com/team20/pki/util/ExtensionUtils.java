@@ -26,7 +26,6 @@ public class ExtensionUtils {
         );
 
     }
-
     public void addKeyUsageExtensions(JcaX509v3CertificateBuilder builder, List<String> usages) throws CertIOException {
         if(usages == null || usages.isEmpty())
             return;

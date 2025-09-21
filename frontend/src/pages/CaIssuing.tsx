@@ -14,10 +14,13 @@ import * as yup from "yup";
 
 import api from "@/api/axios-config";
 import {
-  extendedKeyUsageOptions,
-  keyUsageOptions,
+  extendedKeyUsageOptions as extendedKeyUsageOptionsCA,
+  keyUsageOptions as keyUsageOptionsCA,
 } from "@/model/ca.certificate.extenstions";
-
+import {
+  extendedKeyUsageOptions as extendedKeyUsageOptionsEE,
+  keyUsageOptions as keyUsageOptionsEE,
+} from "@/model/end.entity.certificate.extensions";
 interface User {
   id: string;
   firstName: string;
@@ -51,6 +54,7 @@ interface CertificateRequestData {
   title: string;
   keyUsage: string[];
   extendedKeyUsage: string[];
+  maxLength?: number;
   validityDays: number;
 }
 
@@ -81,6 +85,11 @@ const apiCalls = {
 };
 
 const CAIssuing: React.FC = () => {
+  const [keyUsageOptions, setKeyUsageOptions] = useState<any[]>([]);
+
+  const [extendedKeyUsageOptions, setExtendedKeyUsageOptions] = useState<any[]>(
+    []
+  );
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -100,8 +109,8 @@ const CAIssuing: React.FC = () => {
     emailAddress: "",
     title: "",
     validityDays: 30,
-    keyUsage: ["digitalSignature"], // Default for intermediate CA
-    extendedKeyUsage: ["clientAuth"], // Default minimal setting
+    keyUsage: [], // Default for intermediate CA
+    extendedKeyUsage: [], // Default minimal setting
   });
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
@@ -165,6 +174,13 @@ const CAIssuing: React.FC = () => {
           title: "",
         }));
       });
+      if (selectedUser.role !== "REGULAR_USER") {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsCA]);
+        setKeyUsageOptions([...keyUsageOptionsCA]);
+      } else {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsEE]);
+        setKeyUsageOptions([...keyUsageOptionsEE]);
+      }
     }
   }, [selectedUser]);
 
@@ -376,7 +392,26 @@ const CAIssuing: React.FC = () => {
   const getUserInitials = (user: User) => {
     return user.firstName.charAt(0) + user.lastName.charAt(0);
   };
+  const [enableMaxLength, setEnableMaxLength] = useState<boolean>(false);
 
+  const handleMaxLengthEnabledChange = (checked: boolean) => {
+    setEnableMaxLength(checked);
+    if (!checked) {
+      setFormData((prev) => ({
+        ...prev,
+        maxLength: undefined,
+      }));
+    }
+  };
+
+  // Handle Max Length value change
+  const handleMaxLengthChange = (value: string) => {
+    const numValue = value === "" ? undefined : Number(value);
+    setFormData((prev) => ({
+      ...prev,
+      maxLength: numValue,
+    }));
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
       <div className=" w-3/4 mx-auto">
@@ -632,6 +667,63 @@ const CAIssuing: React.FC = () => {
 
                         {isKeyUsageAccordionOpen && (
                           <div className="px-6 pb-6">
+                            <div>
+                              <div className="flex items-center mb-3">
+                                <input
+                                  type="checkbox"
+                                  id="enableMaxLength"
+                                  checked={enableMaxLength}
+                                  onChange={(e) =>
+                                    handleMaxLengthEnabledChange(
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                                />
+                                <label
+                                  htmlFor="enableMaxLength"
+                                  className="text-white font-medium cursor-pointer"
+                                >
+                                  Enable Max Length Constraint
+                                </label>
+                              </div>
+                              <p className="text-slate-400 text-sm mb-4">
+                                Set maximum length constraint for the
+                                certificate path
+                              </p>
+
+                              {enableMaxLength && (
+                                <div>
+                                  <label
+                                    htmlFor="maxLength"
+                                    className={labelClasses}
+                                  >
+                                    Max Length
+                                  </label>
+                                  <input
+                                    type="number"
+                                    id="maxLength"
+                                    name="maxLength"
+                                    value={formData.maxLength || ""}
+                                    onChange={(e) =>
+                                      handleMaxLengthChange(e.target.value)
+                                    }
+                                    min="0"
+                                    placeholder="e.g., 3"
+                                    className={inputClasses("maxLength")}
+                                  />
+                                  <p className="text-slate-400 text-xs mt-1">
+                                    Maximum number of non-self-issued
+                                    intermediate certificates
+                                  </p>
+                                  {validationErrors.maxLength && (
+                                    <p className={errorClasses}>
+                                      {validationErrors.maxLength}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             <div className="border-t border-slate-600 pt-4">
                               {/* Key Usage */}
                               <div className="mb-6">
