@@ -6,11 +6,21 @@ import {
   ChevronRight,
   ShieldCheck,
   Info,
+  Key,
+  ChevronDown,
+  Shield,
 } from "lucide-react";
 import * as yup from "yup";
 
 import api from "@/api/axios-config";
-
+import {
+  extendedKeyUsageOptions as extendedKeyUsageOptionsCA,
+  keyUsageOptions as keyUsageOptionsCA,
+} from "@/model/ca.certificate.extenstions";
+import {
+  extendedKeyUsageOptions as extendedKeyUsageOptionsEE,
+  keyUsageOptions as keyUsageOptionsEE,
+} from "@/model/end.entity.certificate.extensions";
 interface User {
   id: string;
   firstName: string;
@@ -42,6 +52,9 @@ interface CertificateRequestData {
   l: string;
   emailAddress: string;
   title: string;
+  keyUsage: string[];
+  extendedKeyUsage: string[];
+  maxLength?: number;
   validityDays: number;
 }
 
@@ -72,6 +85,11 @@ const apiCalls = {
 };
 
 const CAIssuing: React.FC = () => {
+  const [keyUsageOptions, setKeyUsageOptions] = useState<any[]>([]);
+
+  const [extendedKeyUsageOptions, setExtendedKeyUsageOptions] = useState<any[]>(
+    []
+  );
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -91,6 +109,8 @@ const CAIssuing: React.FC = () => {
     emailAddress: "",
     title: "",
     validityDays: 30,
+    keyUsage: [], // Default for intermediate CA
+    extendedKeyUsage: [], // Default minimal setting
   });
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
@@ -109,6 +129,26 @@ const CAIssuing: React.FC = () => {
     { number: 1, title: "Select User", icon: User },
     { number: 2, title: "Certificate Details", icon: Award },
   ];
+
+  const [isKeyUsageAccordionOpen, setIsKeyUsageAccordionOpen] = useState(false);
+  const handleKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      keyUsage: checked
+        ? [...prev.keyUsage, value]
+        : prev.keyUsage.filter((usage) => usage !== value),
+    }));
+  };
+
+  // Handle Extended Key Usage changes
+  const handleExtendedKeyUsageChange = (value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      extendedKeyUsage: checked
+        ? [...prev.extendedKeyUsage, value]
+        : prev.extendedKeyUsage.filter((usage) => usage !== value),
+    }));
+  };
 
   useEffect(() => {
     apiCalls.getUsers().then((res) => setUsers(res.data));
@@ -134,6 +174,13 @@ const CAIssuing: React.FC = () => {
           title: "",
         }));
       });
+      if (selectedUser.role !== "REGULAR_USER") {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsCA]);
+        setKeyUsageOptions([...keyUsageOptionsCA]);
+      } else {
+        setExtendedKeyUsageOptions([...extendedKeyUsageOptionsEE]);
+        setKeyUsageOptions([...keyUsageOptionsEE]);
+      }
     }
   }, [selectedUser]);
 
@@ -313,6 +360,8 @@ const CAIssuing: React.FC = () => {
         emailAddress: "",
         title: "",
         validityDays: 30,
+        extendedKeyUsage: [],
+        keyUsage: [],
       });
       setValidationErrors({});
     });
@@ -343,10 +392,29 @@ const CAIssuing: React.FC = () => {
   const getUserInitials = (user: User) => {
     return user.firstName.charAt(0) + user.lastName.charAt(0);
   };
+  const [enableMaxLength, setEnableMaxLength] = useState<boolean>(false);
 
+  const handleMaxLengthEnabledChange = (checked: boolean) => {
+    setEnableMaxLength(checked);
+    if (!checked) {
+      setFormData((prev) => ({
+        ...prev,
+        maxLength: undefined,
+      }));
+    }
+  };
+
+  // Handle Max Length value change
+  const handleMaxLengthChange = (value: string) => {
+    const numValue = value === "" ? undefined : Number(value);
+    setFormData((prev) => ({
+      ...prev,
+      maxLength: numValue,
+    }));
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className=" w-3/4 mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center bg-blue-600 border-blue-600 border-2 w-16 h-16 rounded-full mb-4">
@@ -458,7 +526,7 @@ const CAIssuing: React.FC = () => {
         ) : (
           /* Step 2 - Certificate Form styled like EndEntityCertificateForm */
           <div className="flex items-center justify-center">
-            <div className="w-full backdrop-blur-sm max-w-2xl bg-slate-800 rounded-xl shadow-xl border border-slate-700">
+            <div className="w-full backdrop-blur-sm min-w-2xl max-w-4xl bg-slate-800 rounded-xl shadow-xl border border-slate-700">
               <div className="p-8">
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-white mb-2">
@@ -574,6 +642,183 @@ const CAIssuing: React.FC = () => {
                           <p className={errorClasses}>
                             {validationErrors.validityDays}
                           </p>
+                        )}
+                      </div>
+                      <div className="bg-slate-700 rounded-lg border border-slate-600">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsKeyUsageAccordionOpen(!isKeyUsageAccordionOpen)
+                          }
+                          className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset rounded-lg"
+                        >
+                          <div className="flex items-center">
+                            <Key className="w-5 h-5 text-blue-400 mr-3" />
+                            <span className="text-white font-medium">
+                              Key Usage Settings
+                            </span>
+                          </div>
+                          <ChevronDown
+                            className={`w-5 h-5 text-white transition-transform duration-200 ${
+                              isKeyUsageAccordionOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {isKeyUsageAccordionOpen && (
+                          <div className="px-6 pb-6">
+                            <div>
+                              <div className="flex items-center mb-3">
+                                <input
+                                  type="checkbox"
+                                  id="enableMaxLength"
+                                  checked={enableMaxLength}
+                                  onChange={(e) =>
+                                    handleMaxLengthEnabledChange(
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2 mr-3"
+                                />
+                                <label
+                                  htmlFor="enableMaxLength"
+                                  className="text-white font-medium cursor-pointer"
+                                >
+                                  Enable Max Length Constraint
+                                </label>
+                              </div>
+                              <p className="text-slate-400 text-sm mb-4">
+                                Set maximum length constraint for the
+                                certificate path
+                              </p>
+
+                              {enableMaxLength && (
+                                <div>
+                                  <label
+                                    htmlFor="maxLength"
+                                    className={labelClasses}
+                                  >
+                                    Max Length
+                                  </label>
+                                  <input
+                                    type="number"
+                                    id="maxLength"
+                                    name="maxLength"
+                                    value={formData.maxLength || ""}
+                                    onChange={(e) =>
+                                      handleMaxLengthChange(e.target.value)
+                                    }
+                                    min="0"
+                                    placeholder="e.g., 3"
+                                    className={inputClasses("maxLength")}
+                                  />
+                                  <p className="text-slate-400 text-xs mt-1">
+                                    Maximum number of non-self-issued
+                                    intermediate certificates
+                                  </p>
+                                  {validationErrors.maxLength && (
+                                    <p className={errorClasses}>
+                                      {validationErrors.maxLength}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="border-t border-slate-600 pt-4">
+                              {/* Key Usage */}
+                              <div className="mb-6">
+                                <h4 className="text-white font-medium mb-3 flex items-center">
+                                  <Shield className="w-4 h-4 mr-2 text-blue-400" />
+                                  Key Usage{" "}
+                                  <span className="text-red-400 ml-1">*</span>
+                                </h4>
+                                <p className="text-slate-400 text-sm mb-4">
+                                  Select how this certificate key can be used
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {keyUsageOptions.map((option) => (
+                                    <label
+                                      key={option.value}
+                                      className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={formData.keyUsage.includes(
+                                          option.value
+                                        )}
+                                        onChange={(e) =>
+                                          handleKeyUsageChange(
+                                            option.value,
+                                            e.target.checked
+                                          )
+                                        }
+                                        className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                      />
+                                      <div className="flex-1">
+                                        <span className="text-white text-sm font-medium block">
+                                          {option.label}
+                                        </span>
+                                        <span className="text-slate-300 text-xs">
+                                          {option.description}
+                                        </span>
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                                {validationErrors.keyUsage && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.keyUsage}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Extended Key Usage */}
+                              <div>
+                                <h4 className="text-white font-medium mb-3 flex items-center">
+                                  <ShieldCheck className="w-4 h-4 mr-2 text-blue-400" />
+                                  Extended Key Usage{" "}
+                                </h4>
+                                <p className="text-slate-400 text-sm mb-4">
+                                  Select specific purposes for this certificate
+                                </p>
+                                <div className="grid grid-cols-1 gap-3">
+                                  {extendedKeyUsageOptions.map((option) => (
+                                    <label
+                                      key={option.value}
+                                      className="flex items-start space-x-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={formData.extendedKeyUsage.includes(
+                                          option.value
+                                        )}
+                                        onChange={(e) =>
+                                          handleExtendedKeyUsageChange(
+                                            option.value,
+                                            e.target.checked
+                                          )
+                                        }
+                                        className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
+                                      />
+                                      <div className="flex-1">
+                                        <span className="text-white text-sm font-medium block">
+                                          {option.label}
+                                        </span>
+                                        <span className="text-slate-300 text-xs">
+                                          {option.description}
+                                        </span>
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                                {validationErrors.extendedKeyUsage && (
+                                  <p className={errorClasses}>
+                                    {validationErrors.extendedKeyUsage}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
 
