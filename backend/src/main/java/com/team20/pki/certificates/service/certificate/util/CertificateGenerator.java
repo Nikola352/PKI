@@ -18,6 +18,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -40,10 +41,12 @@ import java.util.UUID;
 @Component
 public class CertificateGenerator {
     private final ExtensionUtils extensionUtils;
+    private final String crlPath;
 
-    public CertificateGenerator() {
+    public CertificateGenerator(@Value("${crl-url}") String revocationListPath) {
         Security.addProvider(new BouncyCastleProvider());
         extensionUtils = new ExtensionUtils();
+        crlPath = revocationListPath;
     }
 
     public X509Certificate generateCertificate(
@@ -104,7 +107,7 @@ public class CertificateGenerator {
             extensionUtils.addKeyUsageExtensions(certificateBuilder, updatedKeyUsage);
             extensionUtils.addExtendedKeyUsage(certificateBuilder, extendedKeyUsage);
             // if the parent certificate
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getId();
+            String crlDistPoint = crlPath + parent.getId();
 
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
@@ -156,7 +159,7 @@ public class CertificateGenerator {
             );
 
             extensionUtils.addCertificateAuthorityBaseExtensions(certBuilder, null);
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + id;
+            String crlDistPoint = crlPath + id;
 
 
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
