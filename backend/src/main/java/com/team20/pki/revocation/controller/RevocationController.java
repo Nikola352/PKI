@@ -31,8 +31,8 @@ public class RevocationController {
     }
 
     @GetMapping("/crl/{serialNumber}")
-    ResponseEntity<byte[]> getCertificateRevocationList(@PathVariable("serialNumber")UUID certifiedAuthorityId){
-        CRLResponseDTO response = revocationService.getCertificateRevocationList(certifiedAuthorityId);
+    ResponseEntity<byte[]> getCertificateRevocationList(@PathVariable("serialNumber")UUID certifiedAuthorityCertificateId) throws GeneralSecurityException, IOException, OperatorCreationException {
+        CRLResponseDTO response = revocationService.getCertificateRevocationList(certifiedAuthorityCertificateId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"crl.der\"")
                 .header(HttpHeaders.CONTENT_TYPE, "application/pkix-crl")

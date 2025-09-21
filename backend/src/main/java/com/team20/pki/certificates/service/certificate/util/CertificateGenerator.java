@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.UUID;
 
 @Component
 public class CertificateGenerator {
@@ -88,8 +89,8 @@ public class CertificateGenerator {
             extensionUtils.addKeyUsageExtensions(certificateBuilder, updatedKeyUsage);
             extensionUtils.addExtendedKeyUsage(certificateBuilder, extendedKeyUsage);
             // if the parent certificate
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getId();
 
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + parent.getOwner().getId();
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
                     new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});
@@ -110,7 +111,6 @@ public class CertificateGenerator {
         }
 
     }
-
     private List<String> concatenateBaseCaKeyUsage(CertificateType type, List<String> keyUsage) {
         List<String> updatedKeyUsage = keyUsage.stream().toList();
         if (!type.equals(CertificateType.END_ENTITY))
@@ -118,10 +118,9 @@ public class CertificateGenerator {
         return updatedKeyUsage;
     }
 
-    public X509Certificate generateSelfSignedCertificate(BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
+    public X509Certificate generateSelfSignedCertificate(UUID id, BigInteger serialNumber, KeyPair keyPair, User owner, LocalDate startDate, LocalDate endDate, Subject subject) {
 
-        try {
-            ;
+        try {;
             X500Name subjectName = subject.toX500Name();
             X500Name issuerName = subjectName;
 
@@ -142,8 +141,9 @@ public class CertificateGenerator {
             );
 
             extensionUtils.addCertificateAuthorityBaseExtensions(certBuilder, null);
+            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + id;
 
-            String crlDistPoint = "http://localhost:8080/api/certificates/revoke/crl/" + owner.getId();
+
             GeneralName generalName = new GeneralName(GeneralName.uniformResourceIdentifier, crlDistPoint);
             CRLDistPoint distributionPoint = new CRLDistPoint(new DistributionPoint[]{
                     new DistributionPoint(new DistributionPointName(new GeneralNames(generalName)), null, null)});

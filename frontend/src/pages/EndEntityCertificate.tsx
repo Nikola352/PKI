@@ -10,6 +10,7 @@ import {
   extendedKeyUsageOptions,
   keyUsageOptions,
 } from "@/model/end.entity.certificate.extensions";
+import { X } from "lucide-react";
 const { VITE_API_BASE_URL } = import.meta.env;
 
 interface CertificateAuthority {
@@ -33,9 +34,6 @@ const allRdns: Array<keyof CertificateRequestData> = [
   "emailAddress",
   "title",
 ];
-
-// Key Usage options
-
 const certificateApi = {
   post: async (data: any) => {
     return api.post(`${VITE_API_BASE_URL}/api/certificates/ca-issued`, data);
@@ -143,10 +141,13 @@ export const EndEntityCertificateForm: React.FC = () => {
     keyUsage: [], // Default selections
     extendedKeyUsage: [], // Default selections
   });
-  useEffect(() => console.log(formData), [formData]);
+
   const [validationErrors, setValidationErrors] = useState<FormErrors>({});
   const [dynamicSchema, setDynamicSchema] = useState<yup.ObjectSchema<any>>(
     yup.object()
+  );
+  const [lastStatus, setLastStatus] = useState<"success" | "error" | null>(
+    null
   );
 
   // Fetch available CAs
@@ -332,8 +333,29 @@ export const EndEntityCertificateForm: React.FC = () => {
       setValidationErrors({});
       await certificateApi.downloadPem(data.certificateId);
     },
+    onError: () => {
+      console.log("Error");
+    },
   });
 
+  useEffect(() => {
+    if (
+      createCertificateRequestMutation.isSuccess ||
+      createExternalCertificateRequestMutation.isSuccess
+    ) {
+      setLastStatus("success");
+    } else if (
+      createCertificateRequestMutation.isError ||
+      createExternalCertificateRequestMutation.isError
+    ) {
+      setLastStatus("error");
+    }
+  }, [
+    createCertificateRequestMutation.isSuccess,
+    createExternalCertificateRequestMutation.isSuccess,
+    createCertificateRequestMutation.isError,
+    createExternalCertificateRequestMutation.isError,
+  ]);
   const validateExternalForm = () => {
     const errors: FormErrors = {};
 
@@ -484,7 +506,7 @@ export const EndEntityCertificateForm: React.FC = () => {
               </p>
             </div>
 
-            {createCertificateRequestMutation.isSuccess && (
+            {lastStatus === "success" ? (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center">
                   <svg
@@ -503,7 +525,18 @@ export const EndEntityCertificateForm: React.FC = () => {
                   </p>
                 </div>
               </div>
-            )}
+            ) : lastStatus === "error" ? (
+              <div className="mb-6 p-4 bg-green-50 border border-red-200 rounded-lg">
+                <div className="flex items-center">
+                  <div className="inline-flex items-center justify-center w-5 h-5 bg-red-600 rounded-full mr-3">
+                    <X className="w-4 h-4 text-red-50" />
+                  </div>
+                  <p className="text-red-700 font-medium">
+                    Certificate request creation failed!
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-6">
               {/* CA Selection */}
@@ -1242,7 +1275,7 @@ export const EndEntityCertificateForm: React.FC = () => {
                       error={validationErrors.uploadedFile ?? ""}
                       setValidationError={setValidationErrors}
                     />
-
+                    {/* FILE UPLOAD, CA SELECTOR, DURATION SELECTOR */}
                     {/* Action Button */}
                     <button
                       className={`w-full mt-6 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:shadow-lg active:scale-95 ${"bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"}`}

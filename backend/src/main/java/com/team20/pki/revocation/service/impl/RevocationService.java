@@ -2,6 +2,7 @@ package com.team20.pki.revocation.service.impl;
 
 import com.team20.pki.certificates.model.Certificate;
 import com.team20.pki.certificates.repository.ICertificateRepository;
+import com.team20.pki.common.exception.InvalidRequestError;
 import com.team20.pki.revocation.dto.CRLResponseDTO;
 import com.team20.pki.revocation.dto.RevokeCertificateRequestDTO;
 import com.team20.pki.revocation.model.CertificateRevocationList;
@@ -40,7 +41,7 @@ public class RevocationService implements IRevocationService {
         if (parentCertificate == null){
             return createSelfSignedCRL(certificate, revokeCertificateRequestDTO);
         }
-        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getOwner().getId());
+        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getId());
 
         if (crl == null){
             crl = crlService.createEmptyCRL(parentCertificate);
@@ -51,13 +52,17 @@ public class RevocationService implements IRevocationService {
     }
 
     @Override
-    public CRLResponseDTO getCertificateRevocationList(UUID certifiedAuthorityId) {
-        CertificateRevocationList crl = crlService.findForCA(certifiedAuthorityId);
+    public CRLResponseDTO getCertificateRevocationList(UUID certifiedAuthorityCertificateId) throws GeneralSecurityException, IOException, OperatorCreationException {
+        CertificateRevocationList crl = crlService.findForCA(certifiedAuthorityCertificateId);
+        if (crl == null) {
+            Certificate cert = certificateRepository.findById(certifiedAuthorityCertificateId).orElseThrow(() -> new InvalidRequestError("Invalid CA certificate id!"));
+            crl = crlService.createEmptyCRL(cert);
+        }
         return new CRLResponseDTO(crl.getRevocationList());
     }
 
     private CertificateRevocationResponseDTO createSelfSignedCRL(Certificate rootCertificate, RevokeCertificateRequestDTO revokeCertificateRequestDTO) throws GeneralSecurityException, IOException, OperatorCreationException {
-        CertificateRevocationList crl = crlService.findForCA(rootCertificate.getOwner().getId());
+        CertificateRevocationList crl = crlService.findForCA(rootCertificate.getId());
         if (crl == null){
             crl = crlService.createEmptyCRL(rootCertificate);
         }
@@ -77,7 +82,7 @@ public class RevocationService implements IRevocationService {
     }
 
     private void addCertificateToCRL(Certificate parentCertificate, Certificate certToRevoke) throws GeneralSecurityException, IOException, OperatorCreationException {
-        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getOwner().getId());
+        CertificateRevocationList crl = crlService.findForCA(parentCertificate.getId());
 
         if (crl == null){
             crl = crlService.createEmptyCRL(parentCertificate);

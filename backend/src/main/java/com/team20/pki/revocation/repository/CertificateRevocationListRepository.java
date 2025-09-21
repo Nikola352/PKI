@@ -8,5 +8,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface CertificateRevocationListRepository extends JpaRepository<CertificateRevocationList, UUID> {
-    CertificateRevocationList findByUserId(UUID userId);
+    CertificateRevocationList findByCACertificateId(UUID userId);
 }

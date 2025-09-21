@@ -62,7 +62,7 @@ public class CertificateRevocationListService {
 
         X509CRL x509CRL = converter.getCRL(crlGen.build(signer));
 
-        CertificateRevocationList crl = new CertificateRevocationList(null, parentCACertificate.getOwner(), toByteArray(x509CRL));
+        CertificateRevocationList crl = new CertificateRevocationList(null, parentCACertificate, toByteArray(x509CRL));
         return certificateRevocationListRepository.save(crl);
     }
 
@@ -104,8 +104,8 @@ public class CertificateRevocationListService {
         return certificateRevocationListRepository.save(crl);
     }
 
-    public CertificateRevocationList findForCA(UUID authorityId){
-        return certificateRevocationListRepository.findByUserId(authorityId);
+    public CertificateRevocationList findForCA(UUID caCertificateId){
+        return certificateRevocationListRepository.findByCACertificateId(caCertificateId);
     }
 
     private Date calculateDate(int hoursInFuture)
