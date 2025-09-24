@@ -643,7 +643,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* User info and logout */}
-            <div className="flex items-center space-x-4">
+            {/* <div className="flex items-center space-x-4">
               <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-600/50 rounded-xl px-6 py-3">
                 <div className="text-right">
                   <div className="text-white font-semibold">
@@ -661,8 +661,8 @@ const Dashboard: React.FC = () => {
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>
               </button>
-            </div>
-          </div>
+            </div>*/}
+          </div> 
 
           {/* Stats Overview */}
           <div className="bg-gradient-to-r from-slate-800/60 to-slate-800/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 shadow-lg">
