@@ -18,6 +18,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -131,9 +134,14 @@ public class AuthService {
             throw new NotFoundError("Activation link invalid or expired");
         }
 
-        User user = registerRequestMapper.toUser(request);
-        userRepository.save(user);
-        registerRequestRepository.delete(request);
+        try {
+            User user = registerRequestMapper.toUser(request);
+            userRepository.save(user);
+            registerRequestRepository.delete(request);
+        } catch (DataIntegrityViolationException e) {
+            log.error("Account activation failed: {}", e.getMessage());
+            throw new NotFoundError("Activation link invalid or expired");
+        }
     }
 
     @Transactional
